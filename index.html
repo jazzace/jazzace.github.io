@@ -9,5 +9,13 @@ title: The MacLabs Blog
 <body>
 <h1>Anthony Reimer’s Blog for Mac Admins</h1>
 <p>This is the start of a new blog for Mac Admins. Expect a real post near the end of May 2017.</p>
+<h2>Posts So Far:</h2>
+<ul>
+  {% for post in site.posts %}
+    <li>
+      <a href="{{ post.url }}">{{ post.title }}</a>
+    </li>
+  {% endfor %}
+</ul>
 </body>
 </html>
