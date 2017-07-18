@@ -2,6 +2,8 @@
 layout: post
 title: Adobe CC for Labs
 ---
+_Note: I’m considering pulling this post for a rewrite after a quick discussion with Patrick Fergus in the MacAdmins Slack #adobe channel. Patrick was also in attendance at the session and has better knowledge of the various licensing schemes than I do. So if you decide to keep reading, go and [read the thread starting here](https://macadmins.slack.com/archives/C0653D6F9/p1500383277763853) in that channel as well._
+
 At the 2017 Mac Admins Conference at Penn State last week, Karl Gibson and Johnathan Tse from Adobe spoke to a packed session room about Adobe’s plans for Creative Cloud from an administrative perspective. Reaction was swift, both in the room and in the #adobe channel in the MacAdmins Slack. Balmes Pavlov has a good write-up regarding the implications of Adobe’s plans for Mac admins who want to automate the process of having current installers for their CC apps:
 - [Automation Of Adobe Creative Cloud Packages](https://babodee.wordpress.com/2017/07/16/automation-of-adobe-creative-cloud-packages/)
 
