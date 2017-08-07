@@ -9,7 +9,7 @@ title: macOS and Security Updates
 <p>Periodically, Apple will release an EFI firmware update to address an issue in the Boot ROM. Until 2015, Apple would often offer these as <a href="https://support.apple.com/en-us/HT201518" target="_blank">standalone updates,</a> but the pattern now is to roll them into OS and security updates. These firmware updates are redundantly included in future system updates (e.g., if you had missed the firmware update in 10.12.4, you would still get it if you moved from 10.12.3 to 10.12.5, even though most Macs didn’t change firmware in 10.12.5). This new practice is beneficial for end users, as it is one less update they need to worry about; if observant, they might notice that their computer reboots twice when applying the latest system update, but it requires no additional intervention on their part. This increases the odds that the user is running a secure system. For the Mac Admin, this does require that you have disciplined workflows.</p>
 <p>If you deploy images, regardless of whether you build them modularly using a tool like AutoDMG or you still capture the boot volume of a “Golden Machine” using a tool like DeployStudio or Carbon Copy Cloner, the firmware update will <em>not</em> be applied to the Mac when you deploy your image. You need to run the actual system software update on the target Mac, then deploy the image. (Of course, if your image contains a version of the OS that has not had all of its security/minor version patches applied, running Software Update <em>after</em> you deploy the image will have the same effect.)</p>
 <p>Further complicating matters, the firmware offered for your Mac model may vary depending on the version of the OS you are running. That’s right, if you are running El Capitan or Yosemite and have applied all of Apple’s security updates, you may not have the most current version of the firmware for your Mac. Pepijn Bruienne has <a href="https://docs.google.com/spreadsheets/d/1qGRVF1aRokQgm_LuTsFUN2Knrh0Sd3Gp0ziC_VIWqoM/edit#gid=0" target="_blank">created an excellent spreadsheet listing all the firmware updates by Mac model and OS/Security release</a> where you can see those differences. Based on the patterns you see there, it certainly appears that Apple prepares the security fix for the current OS and if the fix for the two older OSes can be ported back and tested without significantly holding up the release, they release it at the same time. If not, they don’t release it or release it later. For example, let’s look at the EFI firmware version history for the Mac mini (Late 2012) in front of me as I write this:</p>
-<table>
+<table width="95%">
 	<thead>
 	<tr>
 	    <th>Release</th>
@@ -21,25 +21,25 @@ title: macOS and Security Updates
 	<tbody>
 	<tr>
 	    <th>10.12.4 / Security Update 2017-001</th>
-	    <td>MM61_0106_B12</td>	
-	    <td>MM61_0106_B0A</td>	
-	    <td>MM61_0106_B0A</td> 
+	    <td>MM61-0106-B12</td>	
+	    <td>MM61-0106-B0A</td>	
+	    <td>MM61-0106-B0A</td> 
 	</tr>
 	<tr>
 	    <th>10.12.5 / Security Update 2017-002</th>
-	    <td>MM61_0106_B12</td>
-	    <td>MM61_0106_B12</td>
-	    <td>MM61_0106_B0A</td>
+	    <td>MM61-0106-B12</td>
+	    <td>MM61-0106-B12</td>
+	    <td>MM61-0106-B0A</td>
 	</tr>
 	<tr>
 	    <th>10.12.6 / Security Update 2017-003</th>
-	    <td>MM61_0106_B1F</td>
-	    <td>MM61_0106_B12</td>
-	    <td>MM61_0106_B0A(?)</td>
+	    <td>MM61-0106-B1F</td>
+	    <td>MM61-0106-B12</td>
+	    <td>MM61-0106-B0A(?)</td>
 	</tr>
 	</tbody>
 </table>
-<cite>Source: Own research and “Apple EFI firmware versions” compiled by Pepijn Bruienne.</cite>
+<cite style="font-size: 80%;">Source: Own research and “Apple EFI firmware versions” compiled by Pepijn Bruienne. I’ve used a “-” delimiter in the firmware version so that the table breaks appropriately on smaller screens. The delimiter reported by System Information is a dot (.); you‘ll see an underscore (_) if you are examining the contents of the system/security update package.</cite>
 <p>Originally, I speculated that Apple was freezing firmware at the version that existed when the terminal version of the OS was released, but in the example you see above, they broke that pattern when 10.12.5 / Security Update 2017-002 was released, at least with El Capitan Macs. Nevertheless, this pattern does suggest that if you are not running the current major version of macOS, your Mac may still be susceptible to a known security vulnerability.</p>
 <h3>BroadPwn: Similar but Different</h3>
 <p>One of the most notable security vulnerabilities discovered recently is <a href="https://blog.exodusintel.com/2017/07/26/broadpwn/" target="_blank">BroadPwn,</a> named after the Broadcom WiFi chip that is targeted by this exploit. This attack is a little different in that you need to be in physical proximity to the device (WiFi range). Nevertheless, a broad number of devices use the Broadcom 43xx series WiFi chip (including the phone you might have in your pocket), making it an attractive target. Apple rolled out a fix for iOS in 10.3.3 and also released a patch for Macs running Sierra that used the vulnerable series of WiFi chips. Based on some of the data that Michael Lynn collected from the community, it appears that the patched Broadcom WiFi firmware is loaded dynamically by the operating system. This was supported by my testing, where System Information (<code>system_profiler</code>) reported an earlier Broadcom firmware version when I booted from an earlier operating system (Yosemite) on a Mac whose normal boot volume was a fully-patched version of Sierra.</p>
@@ -49,3 +49,4 @@ title: macOS and Security Updates
 <ul><li>If APFS doesn’t kill imaging, the need to keep your Macs secure will. <br/><cite>To Do: Work on modular and no-imaging workflows, even if they are not your production workflow right now. Make certain your production workflow delivers all firmware updates.</cite></li>
 <li>If you have hardware whose terminal OS is 10.11 El Capitan, replace that 7+ year old hardware as soon as possible (unless you’re OK using it without an Internet connection).<br/><cite>To Do: Have a security discussion with the people preparing the budget.</cite></li>
 <li>In Education, we need to be prepared for a mid-year OS upgrade, even if we’ve always waited until the end of the school year to do it; security needs might force our hand.<br/><cite>To Do: Create a macOS testing strategy if you don’t already have one. Have a goal of being ready to support the next major OS release within X number of days of release, with X = as close to 0 as possible (macOS Beta testing must be an active consideration).</li></ul>
+<hr/><p><cite>Updated 2017-08-06 to make the EFI firmware table show up better on small screens. Caption altered to reflect the change.</cite></p>
