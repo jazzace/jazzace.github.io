@@ -1,0 +1,32 @@
+---
+layout: post
+title: More Firmware Fun
+---
+<p>Since my last post on the need to use Apple installers to update firmware (since imaging excludes such payloads), 
+there have been some new findings from the community. First, a discussion in the MacAdmins Slack
+#autodmg channel (amongst Nick Kallister, Pepijn Bruienne, and Arjen van Bochoven) led to a process being developed for 
+creating a standalone installer for the EFI Firmware updater from the High Sierra Beta. Allister Banks then dutifully 
+documented this and expanded upon the topic of firmware further in a <a href="https://www.afp548.com/2017/08/31/uefi-10-13apfs-and-your-imaging/" target="_blank">post on AFP548.</a> Following that,
+the <a href="https://podcast.macadmins.org/2017/08/31/episode-49-scripting-your-entire-life-with-mike-dodge/" target="_blank">MacAdmins Podcast Episode 49</a> spoke even further about firmware starting at about the 63 minute mark, adding some other
+important information (including a reference to the small ROM in the last “Cheese Grater” MacPro 5,1).</p>
+<p>Since I was currently deploying Sierra, I tried to apply the same steps documented in Allister's article
+to see if they would also work for Sierra. The short answer was no. What was interesting, however, was that the <code>FirmwareUpdate.pkg</code>
+installer in the latest <code>Install macOS Sierra</code> installer was a fully functioning package, unlike
+what I had found when <a href="/2017/08/12/firmware-follow-up.html">working with the Sierra updater.</a> 
+So the following processed worked on the one Mac I had left which had not been updated with the latest firmware
+on Sierra:</p>
+<ol><li>Mount the InstallESD.dmg image from inside the <code>Install macOS Sierra</code> app — you can use <code>hdiutil</code> command as was shown in Allister’s post: <br/><code>/usr/bin/hdiutil mount /Applications/Install\ macOS\ Sierra.app/Contents/SharedSupport/InstallESD.dmg</code>.</li>
+<li>Run the <code>FirmwareUpdater.pkg</code> found on the just-mounted volume.</li>
+<li>Manually restart the Mac.</li>
+</ol>
+<p>Late last week, in further discussion in the MacAdmins Slack, it was suggested by Graham Gilbert that one could pull the FirmwareUpdate.pkg from 
+Apple’s public Software Update Service (SUS); Kevin Cox then suggested using <a href="https://github.com/hjuutilainen/sus-inspector" target="_blank">SUS Inspector by Hannes Juutilainen</a> (or, presumably, an SUS you set up using Server.app or <a href="https://github.com/wdas/reposado" target="_blank">Reposado</a>). Just as with my previous post, I have no reason to 
+doubt these fine members of the community. I actually tried SUS Inspector and bringing up the contextual menu for any download allowed you to see the packages contained therein.</p>
+<p><img src="/images/201709_sus-inspector_packages.png" alt="SUS Inspector shows 5 packaes in the macOS Sierra Update download" /></p>
+<p>This seems to confirm that this could also be a viable method.</p>
+<h3>Coda on Imaging</h3>
+<p>Finally, I have alluded to the death of “imaging” (which I define to mean the use of a disk image or contents of a volume to be copied onto the boot volume of a Mac in place of the previous contents<a href="#1"><sup>[1]</sup></a>) in previous posts. At talks I have given over the past many years, I’ve also talked about the need to move away from capturing the contents of a “Golden Machine” into an image as your method of creating your deployment payload (one could argue I setup a conference just to evangelize that point of view). Charles Edge’s comment at the 66 minute mark of the <a href="https://podcast.macadmins.org/2017/08/31/episode-49-scripting-your-entire-life-with-mike-dodge/" target="_blank">MacAdmins Podcast episode noted above</a> is another important reason to move away from that fragile deployment method: the more Macs that get additional embedded systems (like the Touch Bar), the more you have to make certain you have images that work with the hardware upon which you are imposing your image. If you insist on this method, you may no longer be able to use a single image for your fleet. Whereas previously some unneeded functionality might be lost if you, say, build an image on a laptop and deploy it to a desktop Mac, now we are talking about the possibility that your Mac won’t boot at all. If you have to have multiple “Golden Machines,” how much further behind are you going to be
+as compared to learning a modern, modular, flexible deployment method?</p>
+<hr />
+<p id="1">[1] Once I get through the beginning-of-season rush, I’m going to write a follow-up piece to my <a href="https://www.afp548.com/2013/05/21/deployment-a-pedagogical-manifesto/" target="_blank">2013 Pedagogical Manifest(o)</a> to
+further dive in to imaging terminology and why we need to be precise in the words we use so that we can have intelligent conversations and understand each other better.</p>
