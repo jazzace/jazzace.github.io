@@ -1,0 +1,65 @@
+---
+layout: post
+title: UNIX Aliases and AutoPkg
+---
+<p>If you saw my “AutoPkg Level-Up” presentation, either in person at Mac Admins at Penn State or <a href="https://youtube.com/watch?v=BI10WWrgG2A" target="_blank">by watching the video of the session posted online,</a> you may have noticed that the <a href="https://github.com/jazzace/autopkg-level-up/raw/master/AutoPkg_Level_Up_PSU_slides.pdf" target="_blank">slide deck</a> has a few extra slides that I didn’t discuss because I was short on time (or, perhaps, I was lacking brevity in my presentation). This post is about the slides I entitled, “Type It For Me.”</p>
+<p>As I mentioned in my presentation, even AutoPkgr users need to use AutoPkg from the command line to implement the Trust Verification features added in version 1.0, and there are great benefits to using the command line to test new recipes. But perhaps, like me, you are not a great typist, or perhaps you tend to always use the same options all the time and would like to save some keystrokes. You could certainly use the text replacement feature in macOS (System Preferences &gt; Keyboard &gt; Text) or you could use a third party tool like TypeIt4Me, TextExpander, or Keyboard Maestro, which would add the ability to limit the scope of your shortcuts to just the Terminal. But UNIX OSes have always had a powerful way to create a command shortcut using the <code>alias</code> command. Here’s a look at how I leverage UNIX aliases to make things easier for me when using AutoPkg at the command line.</p>
+<h3>Temporary and Every-Session Aliases</h3>
+<p>The format of the alias command is:</p>
+<pre>
+alias name='command string'
+</pre>
+<p>Note that I’ve used single quotes here to surround the command string we want to alias (which is the most common method), but you could use double quotes if you prefer. Regardless, if you need to use quotes as part of your command string, use the other type (e.g., use double quotes inside single quotes).</p>
+<p>Here’s one alias I used as an undergrad working on UNIX mainframes, since I almost always wanted the long form of <code>ls</code>:</p>
+<pre>
+alias ls='ls -la'
+</pre>
+<p>In this case, I’ve deliberately mapped the alias to an existing UNIX command (<code>ls</code>); my alias will take priority.<a href="#foot1" id="ref1"><sup>[1]</sup></a> Thus, take care when selecting your shortcut text.</p>
+<p>You can set up an alias at any time. Once you type it in, it is valid for the rest of your session in that shell (unless you choose to specifically <code>unalias</code> it). A simple example that could save you a lot of keystrokes when using AutoPkg is:</p>
+<pre>
+alias ap='autopkg'
+</pre>
+<p>You could even choose to use just the letter "a" here instead of "ap", since there is no UNIX <code>a</code> command.</p>
+<p>I should also clarify at this point that, unlike the text substitution tools I mentioned earlier that can work system-wide, UNIX aliases only apply to the beginning of a command line command. For example, entering the command <code>ls -ap</code> with the <code>ap</code> alias in place would <em>not</em> expand out to <code>ls -autopkg</code> as it might with one of the tools I mentioned in the introduction.</p>
+<p>I could choose to just enter this <code>alias</code> command every time I start a new Terminal window in this user account (perhaps by going back through the recent command history using the Up Arrow key or the <code>history</code> command and then re-running that command), but there is a more permanent way. I can place a list of UNIX commands in a text file named <code>.bash_profile</code> that I place at the root of my home directory.<a href="#foot2" id="ref2"><sup>[2]</sup></a> Any commands in that file will load every time I open a new Terminal window when logged in to that account. This is not just limited to <code>alias</code> commands — for example, many users place a command in this file to change the appearance of their shell prompt. But for our purposes, I will only list aliases. A typical <code>~/.bash_profile</code> file that I use to setup AutoPkg is in this repository: <a href="https://github.com/jazzace/autopkg-level-up/blob/master/aliases/.bash_profile" target="_blank">https://github.com/jazzace/autopkg-level-up/blob/master/aliases/.bash_profile</a> — let me go through that file and explain how I use those commands.</p>
+<h3>Aliases For Recipe Writing and Testing</h3>
+<p>I believe every AutoPkg(r) user should block recipes that do not pass Trust Verification (i.e. recipes that have been updated since you last verified them). However, when you are creating recipes, there will never be any trust information present, so for that period of time you will need to turn trust verification off.<a href="#foot3" id="ref3"><sup>[3]</sup></a> As I mentioned in the presentation, there are two commands that can do this:</p>
+<p><pre>
+defaults write com.github.autopkg FAIL_RECIPES_WITHOUT_TRUST_INFO -bool NO
+</pre>
+which turns trust verification off for all AutoPkg recipes I run from that account until I say otherwise, or:
+<pre>
+autopkg run -k FAIL_RECIPES_WITHOUT_TRUST_INFO="" recipename.recipetype
+</pre>
+which sets the <code>FAIL_RECIPES_WITHOUT_TRUST_INFO</code> flag to empty (false) for just this run of the recipe, which will let the recipe run regardless of the current trust settings.</p>
+<p>These are pretty long strings, prone to typing errors; they seem perfect for aliases. My methodology—up until just before my Penn State presentation—was to turn off trust just before testing and turn it back on when I was done. I created two aliases to do this (you’ll need to scroll sideways in the block below to see the whole command):</p>
+<pre>
+alias notrust='defaults write com.github.autopkg FAIL_RECIPES_WITHOUT_TRUST_INFO -bool NO ; echo "autopkg recipes without valid trust info are now able to run."'
+alias trust="defaults write com.github.autopkg FAIL_RECIPES_WITHOUT_TRUST_INFO -bool YES ; echo 'autopkg recipes without valid trust info will be prevented from running.'"
+</pre>
+<p>A couple of points here: the semicolon ends the current command and lets me start a second command; I could string multiple commands together this way if I chose. In this case, I simply provide feedback in the Terminal window that confirms the command’s intent and that it is an AutoPkg-related alias. So when I start testing recipes, I would issue the command <code>notrust</code> and when I was done I would issue the command <code>trust</code>. You could use whatever alias name made sense to you. I’ve also shown you what I meant earlier by using single quotes and double quotes differently in the two commands; they are both syntactically valid, but I would generally recommend using single quotes for the outside pair.</p>
+<p>The only problem with that methodology is that sometimes I wouldn’t turn trust back on, whether it was because I was interrupted and didn’t get back to it before my next automated AutoPkg(r) run or I simply forgot. I’d rather not have that potential security hole. Because of the power of aliases, I can easily turn it off just when I run the recipe I am testing, like so:</p>
+<pre>
+alias aprnt='autopkg run -vv -k FAIL_RECIPES_WITHOUT_TRUST_INFO=""'
+</pre>
+<p>So all I have to do when testing is type <code>aprnt <cite>recipename.recipetype</cite></code> and leave trust on all the time. (<code>aprnt</code> stands for “autopkg run, no trust” in my mind — use whatever abbreviation makes sense to you.) I’ve also turned on Verbosity Level 2 (<code>-vv</code>) since I am testing and want that level of detail for debugging. This is going to be my methodology going forward.<a href="#foot4" id="ref4"><sup>[4]</sup></a>
+<p>Let me briefly go through the rest of the aliases in that file:</p>
+<dl>
+	<dt>apr <cite>recipename.recipetype</cite></dt>
+		<dd>I used this a lot with my previous recipe testing methodology, as I wanted verbosity on without thinking about it. I will probably change this alias to be non-verbose or have it run what <code>aprnt</code> does now.</dd>
+	<dt>verifytrust</dt>
+		<dd>Since my recipe list was setup with AutoPkgr, this is an easy way to check my entire list when a trust failure is reported. I still have the option of adding <code>-vv</code> if I want the command to also show the changes (“diff”) since the recipe was last trusted.</dd>
+	<dt>updatetrust <cite>recipename.recipetype</cite></dt>
+		<dd>This is just a typing shortcut that aligns nicely with <code>verifytrust</code>. Remember that an override must be in place for this command to work, since that is where trust information is stored.</dd>
+	<dt>appi</dt>
+		<dd>You could have a whole series of aliases like this, where you use the alias for AutoPkg and just append one or two letters to signify the verb. Getting information about a processor is something I constantly do when writing a recipe because I want to know what input variables are in play (required and optional) and what output variables (if any) it will produce.</dd>
+</dl>
+<p>You can confirm at any time what aliases are active in your current shell session by issuing the <code>alias</code> command without any options.<a href="#foot5" id="ref5"><sup>[5]</sup></a>
+<h3>Summing Up</h3>
+<p>Who knew that abilities I learned when I was an undergrad years ago (OK, <em>decades</em> ago) would make my life easier when using a modern tool like AutoPkg? Take my ideas and experiment with your own variations. I hope that this makes things a little easier for those who don’t spend a lot of time in the Terminal—and for those who do, too.</p>
+<hr />
+<p id="foot1">[1] It is possible to run the original UNIX command by starting with a backslash. In this instance, that would be <code>\ls</code>. <a href="#ref1">[Return to main text]</a></p>
+<p id="foot2">[2] On macOS, every Terminal window you open is a Login Shell, so placing your configuration commands in <code>~/.bash_profile</code> will ensure that they are processed. Some general UNIX or Linux references will suggest using <code>~/.bashrc</code>, as that is the file processed when you run an Interactive Shell (which is different from a Login Shell). That won’t load on macOS without creating a <code>~/.bash_profile</code> file that has the command <code>source ~/.bashrc</code> in it. So I suggest you skip the middleman. <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] The alternative, I suppose, is to make an override for a recipe that is still in development. The problem I find with that approach is that I am usually making more than one recipe in the chain (e.g., a .download and a .pkg recipe). I test each separately, so I would have to make an override for each during testing and remake the override if I added any Input key/value pairs during development. I’d rather just bypass trust verification for my testing period. <a href="#ref3">[Return to main text]</a></p>
+<p id="foot4">[4] Thanks to Greg Neagle for sleuthing out a workable syntax for this command. I found that using the <code>-k FAIL_RECIPES_WITHOUT_TRUST_INFO=no</code> option would not turn trust off, so Greg suggested an empty string (<code>""</code>) and that worked. This is because the <code>-k</code> or <code>--key</code> option only passes a string value, not the boolean value we need here. In this case, having a null or absent value is treated as False, which is what we want, whereas the presence of any value (even the word “no”) was treated as True. <a href="#ref4">[Return to main text]</a></p>
+<p id="foot5">[5] If you use or test the <code>~/.bash_profile</code> file in this repo, take a look at the difference between how the <code>alias</code> command represents my <code>notrust</code> command (where I used single quotes outside and double quotes inside) and my <code>trust</code> command (where I did the reverse). The shell parses both commands correctly, but when it reports the alias, it converts the outside quotes to single quotes. It does not do the same to the inside quotes, however. Instead, any single quotes inside the outer quotes have to be escaped. It does this automatically in my <code>trust</code> example because the two sets of quotes were different, but if you were to try to type it with only single quotes, you would have to put a quoted backslash (<code>'\'</code>) in front of each inside single quote. It’s so much simpler to just use single quotes outside and double quotes inside unless there is a technical reason not to do so. <a href="#ref5">[Return to main text]</a></p>
