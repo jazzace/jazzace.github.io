@@ -8,7 +8,7 @@ html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
 a, abbr, acronym, address, big, cite, code,
 del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, tt, var,
+small, strike, strong, tt, var, /* sub, sup omitted - commit 7f0a1e3 */
 b, u, i, center,
 dl, dt, dd, ol, ul, li,
 fieldset, form, label, legend,
@@ -56,10 +56,10 @@ body {
 h1, h2, h3, h4, h5, h6 {
   margin: 10px 0;
   font-weight: 700;
-  color: #222222;
-  font-family: 'Lucida Grande', 'Helvetica Neue', 'Calibri', Helvetica, Arial, sans-serif;
+  color:#222222;
+  font-family: 'Lucida Grande', 'Helvetica Neue', 'Calibri', Helvetica, Arial, sans-serif; /* added Helvetica Neue - commit 42794ad */
   letter-spacing: -1px;
-  line-height: 110%;
+  line-height: 110%; /* added adjustment */
 }
 
 h1 {
@@ -99,7 +99,7 @@ footer p {
 
 a {
   text-decoration: none;
-  color: #007edf;
+  color: #007edf; /* colour change */
   text-shadow: none;
 
   transition: color 0.5s ease;
@@ -114,10 +114,13 @@ a {
   -ms-transition: text-shadow 0.5s ease;
 }
 
-a:hover, a:focus {text-decoration: underline;}
+a:hover, a:focus {
+  text-decoration: underline;
+}
 
 footer a {
   color: #F2F2F2;
+  /* underline removed - commit 42794ad */
 }
 
 em, cite {
@@ -153,7 +156,7 @@ p img {
 }
 
 pre, code {
-  width: 100%;
+  width: 100%; /* adjustment made */
   color: #222;
   background-color: #fff;
 
@@ -166,7 +169,6 @@ pre, code {
 }
 
 pre {
-  width: 100%;
   padding: 10px;
   box-shadow: 0 0 10px rgba(0,0,0,.1);
   overflow: auto;
@@ -265,7 +267,7 @@ Full-Width Styles
   padding: 20px 10px;
   margin: 0 auto;
 }
-
+/* Replaces forkme_banner / link to GitHub repo */
 #jazzace_banner {
   display: block;
   position: absolute;
@@ -287,7 +289,7 @@ Full-Width Styles
   background: -webkit-linear-gradient(top, #373737, #212121);
   background: -ms-linear-gradient(top, #373737, #212121);
   background: -o-linear-gradient(top, #373737, #212121);
-  background: linear-gradient(top, #373737, #212121);
+  background: linear-gradient(to top, #373737, #212121);
 }
 
 #header_wrap .inner {
