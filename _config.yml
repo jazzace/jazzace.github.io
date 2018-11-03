@@ -1,2 +1,8 @@
 theme: jekyll-theme-slate
 title: Anthony’s Mac Labs Blog
+url: https://maclabs.jazzace.ca
+description: Anthony Reimer’s blog for Mac Admins that shares what he’s learned recently
+plugins:
+  - jekyll-feed
+author:
+  twitter: anthonyreimer
