@@ -11,12 +11,21 @@ title: 📦 AutoPkgr Repo List Limits
 <p>Sure, I could have added Neil’s repo at the command line, but I’m a bad typist, so I decided to jump into AutoPkgr, find Neil’s recipe repo, and check a box. Whoops! The repo wasn’t there. But I knew that it existed because AutoPkg just found a recipe from it. Since I was already in AutoPkgr, I decided I would just type in the URL in the “Add a repo URL manually” box (so much for saving typing!) and click Add. That worked perfectly. I was then able to do what I needed for the rest of my current workflow to get my customized Firefox installer package assembled and loaded into my current deployment system. Crisis averted.</p>
 <p>Fast forward to Friday. The panic is over; my Fall Redeployment is basically done. I see a note in the #firefox channel that someone else had a bit of trouble finding that same recipe. So I decide to do some further digging to see if this was a bigger problem. At work, I have AutoPkg running on my daily driver, but only for maintaining the software on that Mac. I have a separate Mac mini that runs AutoPkg and AutoDMG to support my Lab deployment and OS testing needs. I had found the problem on the latter, but had not checked elsewhere. It turns out that Neil’s repo didn’t show up on my personal work Mac either. For fun, I decided to count the repos listed in that GUI window in AutoPkgr. It was roughly 100. I compared that to the recipe repo count on GitHub: 103. So I posted a comment on Slack in both #firefox and #autopkg channels seeking insights from others. I got useful responses from @elios (as usual) and Elliot Jordan.</p>
 <p>It seems the likely culprit is GitHub’s API results limit for the type of request AutoPkgr is making. If you’ve tried executing <code>autopkg search</code> with a vague or common search term, you may have seen the message: <code>Warning: Search yielded more than 100 results. Please try a more specific search term.</code> (If you make the equivalent GitHub Search request in AutoPkgr, you’ll still be capped at 100 results, but you won’t be notified about the truncated results.) That seems to be the same for AutoPkgr’s request for the list of recipe repos.</p>
-<p>For reference, here are the four AutoPkg project recipe repos that are not listed by default by AutoPkgr:</p>
+<p>For reference, here are the AutoPkg project recipe repos that are not listed by default by AutoPkgr (updated 2019-01-19):</p>
 <ul><li>apfelwerk-recipes</li>
 <li>crystalllized-recipes</li>
 <li>haircut-recipes</li>
-<li>neilmartin83-recipes</li></ul>
+<li>neilmartin83-recipes</li>
+<li>andredb90-recipes</li>
+<li>apizz-recipes</li>
+<li>jpiel-recipes</li>
+<li>smithjw-recipes</li>
+<li>asemak-recipes</li>
+<li>dcoobs-recipes</li>
+<li>fishd72-recipes</li>
+</ul>
 <p>Surprisingly, this seems to have been the case since 2017 November 07, as these repos were added on or after that date. Of course, any recipe repos added from now on to the project will have the same problem.</p>
 <p>So I’m documenting this here simply to set expectations. AutoPkgr isn’t going to list all the available recipe repos in its interface.<a href="#foot1" id="ref1"><sup>[1]</sup></a> You can still add the above repos from within AutoPkgr (by typing their full git path manually, or by doing a “Search for a recipe on GitHub” for a recipe you know to be in the desired repo and then add it from there) and you can always <code>autopkg repo-add</code> at the command line.</p>
+<p><cite>Additional recipe repos added to the list on 2019-01-19.</cite></p>
 <hr />
 <p id="foot1">[1] If you read the full discussion in the MacAdmins Slack #autopkg channel, you’ll know that there may be a workaround that doesn’t require a codebase change, but my feeble attempts to get a GitHub API Token working in that way have not had any success to this point. I’ll post an update if something comes to fruition.<a href="#ref1">[Return to main text]</a></p>
