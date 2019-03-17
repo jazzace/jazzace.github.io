@@ -18,7 +18,7 @@ device for mcx_2: dnssd://SmallPrinterThatDied._printer._tcp.local./auto
 device for mcx_3: dnssd://SmallPrinterThatLives._printer._tcp.local./auto
 device for mcx_4: dnssd://NewLargePrinter._printer._tcp.local./auto
 </pre>
-<p>For you Mac Admin newbies, MCX stands for <b>M</b>anaged <b>C</b>lient for OS <b>X</b>. You may see reference to this acronym in some configuration profiles, but all you need to understand for the purpose of this discussion is that the printers were assigned an arbitrary name when they were created using a configuration profile, and that name is <code>mcx_<cite>#</cite></code>, where # is an integer, incrementing from zero.</p>
+<p>For you Mac Admin newbies, MCX stands for <strong>M</strong>anaged <strong>C</strong>lient for OS <strong>X</strong>. You may see reference to this acronym in some configuration profiles, but all you need to understand for the purpose of this discussion is that the printers were assigned an arbitrary name when they were created using a configuration profile, and that name is <code>mcx_<cite>#</cite></code>, where # is an integer, incrementing from zero.</p>
 <p>So everything is awesome, right? I’ve determined that <code>mcx_1</code> and <code>max_2</code> are the names of the printers I need to kill. Except that I haven’t. Remember that new Mac I had to rush into production? The output for <code>lpstat -v</code> was different because it never had the profile that included LargePrinterWeReplaced. It was more like this:</p>
 <pre>
 device for mcx_0: dnssd://LaserPrinter._printer._tcp.local./auto
