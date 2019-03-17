@@ -19,7 +19,7 @@ device for mcx_3: dnssd://SmallPrinterThatLives._printer._tcp.local./auto
 device for mcx_4: dnssd://NewLargePrinter._printer._tcp.local./auto
 </pre>
 <p>For you Mac Admin newbies, MCX stands for <strong>M</strong>anaged <strong>C</strong>lient for OS <strong>X</strong>. You may see reference to this acronym in some configuration profiles, but all you need to understand for the purpose of this discussion is that the printers were assigned an arbitrary name when they were created using a configuration profile, and that name is <code>mcx_<cite>#</cite></code>, where # is an integer, incrementing from zero.</p>
-<p>So everything is awesome, right? I’ve determined that <code>mcx_1</code> and <code>max_2</code> are the names of the printers I need to kill. Except that I haven’t. Remember that new Mac I had to rush into production? The output for <code>lpstat -v</code> was different because it never had the profile that included LargePrinterWeReplaced. It was more like this:</p>
+<p>So everything is awesome, right? I’ve determined that <code>mcx_1</code> and <code>mcx_2</code> are the names of the printers I need to kill. Except that I haven’t. Remember that new Mac I had to rush into production? The output for <code>lpstat -v</code> was different because it never had the profile that included LargePrinterWeReplaced. It was more like this:</p>
 <pre>
 device for mcx_0: dnssd://LaserPrinter._printer._tcp.local./auto
 device for mcx_1: dnssd://NewLargePrinter._printer._tcp.local./auto
@@ -39,6 +39,7 @@ lpstat -v | grep UniqueString | sed s/device.for.// | sed s/:.*$//
 <li>Documentation.<br/>Future Me may very well need this knowledge, and based on how long printers last, I might not need it for a few years. Specifics of the solution may or may not change, but I’m betting the process will be similar. It’s why the Minor in Computer Science on my Music degree from 1985 still pays dividends today. While the UNIX commands I used on mainframes way back when gave me a head start when the Mac adopted a UNIX-based OS, the main thing I learned from my studies long ago was <em>process.</em> I often say that the biggest thing my CPSC Minor taught me was how to get what I needed from a manual. So why not create my own manual?</li>
 </ol>
 <p>I hope you got from this story what you needed today.</p>
+<p><cite>Updated 2019-03-17 to fix a typo (h/t Patrick Fergus).</cite></p>
 <hr/>
 <p id="foot1">[1] Technically, the printer was B.E.R.: Beyond Economic Repair. <a href="#ref1">[Return to main text]</a></p>
 <p id="foot2">[2] I generally use the term URI instead of URL because that’s the W3C recommendation — there’s an entire <a href="https://www.w3.org/TR/uri-clarification/" target="_blank">W3C Note on the topic.</a> In other posts, I have often used the more informal term URL for better readability, but this is a case where the protocol at the front of the URI is unlikely to be http(s). So URI felt right in this instance. <a href="#ref2">[Return to main text]</a></p>
