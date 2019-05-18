@@ -1,0 +1,179 @@
+---
+layout: post
+title: 📦 Office AutoPkg Recipes — Update
+---
+<p>There have been significant changes in the available Microsoft Office AutoPkg recipes since my <a href="/2018/09/16/office-autopkg-recipes.html" target="_blank">post last September</a>, so I thought a quick update was due. The good news: things are simpler now.</p>
+<h3>The Usual Suspects</h3>
+<p>What hasn’t changed? The three primary sources of recipes for Office:</p>
+<ul><li>The core AutoPkg recipes, found at <a href="https://github.com/autopkg/recipes" target="_blank">github.com/autopkg/recipes</a> in the <a href="https://github.com/autopkg/recipes/tree/master/MSOfficeUpdates" target="_blank">MSOfficeUpdates</a> folder;</li>
+<li>Rich Trouton’s recipes, found at <a href="https://github.com/autopkg/rtrouton-recipes" target="_blank">github.com/autopkg/rtrouton-recipes</a> in product-specific folders whose name starts with “Microsoft” or “Office”, with child recipes for Munki from Ben Toms in the <a href="https://github.com/autopkg/datajar-recipes" target="_blank">datajar-recipes repo</a>;</li>
+<li>The recipes in Allister Banks’ personal (non-project) GitHub repo, found at <a href="https://github.com/arubdesu/office-recipes" target="_blank">github.com/arubdesu/office-recipes</a>, with recent update help from Zack McCauley.<a href="#foot1" id="ref1"><sup>[1]</sup></a></li>
+</ul>
+<p>I’ll refer to these as the core recipes, rtrouton recipes, and arubdesu recipes respectively.</p>
+<h3>What’s New?</h3>
+<p>The biggest change came earlier this month when the core recipes were updated to support both Office 365/2019 and Office 2016. There were also changes to the arubdesu recipes in April, centred around enhancing the custom processor by adding input variables to allow you to specify whether you were seeking Office 365, 2016, or 2019 and correctly retrieving the version number. So the upshot is that we now have three functioning sets of recipes.<a href="#foot2" id="ref2"><sup>[2]</sup></a></p>
+<h3>Which Should I Pick?</h3>
+<p>In the end, which set of recipes you use will probably come down to the Microsoft products you need to deploy, or in some cases the way you deploy those products. Here’s a handy chart to show you which Microsoft products are supported by each set of recipes, plus a list of the corresponding Microsoft FWLink codes (used by the rtrouton and arubdesu recipes):</p>
+<table>
+	<thead>
+		<tr>
+			<th> Product </th>
+			<th> recipes </th>
+			<th> rtrouton </th>
+			<th> arubdesu </th>
+			<th> FWLink </th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td> Office 365/2019 Suite </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 525133 </td>
+		</tr>
+		<tr>
+			<td> Office 365 BusinessPro Suite (with Teams) </td>
+			<td> </td>
+			<td> <a href="#override">†</a> </td>
+			<td> <a href="#override">†</a> </td>
+			<td> 2009112 </td>
+		</tr>
+		<tr>
+			<td> Office 2016 Suite </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> <a href="#override">†‡</a> </td>
+			<td> 871743 </td>
+		</tr>
+		<tr>
+			<td> Word 365/2019 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 525134 </td>
+		</tr>
+		<tr>
+			<td> Word 2016 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 871748 </td>
+		</tr>
+		<tr>
+			<td> Excel 365/2019 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 525135 </td>
+		</tr>
+		<tr>
+			<td> Excel 2016 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 871750 </td>
+		</tr>
+		<tr>
+			<td> PowerPoint 365/2019 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 525136 </td>
+		</tr>
+		<tr>
+			<td> PowerPoint 2016 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 871751 </td>
+		</tr>
+		<tr>
+			<td> Outlook 365/2019 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 525137 </td>
+		</tr>
+		<tr>
+			<td> Outlook 2016 </td>
+			<td> ✔︎⬆︎👟 </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 871753 </td>
+		</tr>
+		<tr>
+			<td> OneNote Free Standalone Updater </td>
+			<td> ⬆︎<a href="#onenote">*</a> </td>
+			<td> ⬆︎ </td>
+			<td> ⬆︎ </td>
+			<td> 820886 </td>
+		</tr>
+		<tr>
+			<td> OneDrive </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 823060 </td>
+		</tr>
+		<tr>
+			<td> Skype for Business </td>
+			<td> ⬆︎ </td>
+			<td> ✔︎ </td>
+			<td> ✔︎ </td>
+			<td> 832978 </td>
+		</tr>
+		<tr>
+			<td> Teams </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> <a href="#override">†</a> </td>
+			<td> 869428 </td>
+		</tr>
+		<tr>
+			<td> Intune Company Portal </td>
+			<td> </td>
+			<td> <a href="#override">†</a> </td>
+			<td> <a href="#override">†</a> </td>
+			<td> 869655 </td>
+		</tr>
+		<tr>
+			<td> Remote Desktop </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> <a href="#override">†</a> </td>
+			<td> 868963 </td>
+		</tr>
+		<tr>
+			<td> Microsoft AutoUpdate (MAU) </td>
+			<td> ✔︎ </td>
+			<td> <a href="#override">†</a> </td>
+			<td> ✔︎ </td>
+			<td> 830196 </td>
+		</tr>
+		<tr>
+			<td> SharePoint Plugin </td>
+			<td> </td>
+			<td> ✔︎ </td>
+			<td> <a href="#override">†</a> </td>
+			<td> 800050 </td>
+		</tr>
+	</tbody>
+</table>
+<blockquote>Legend/Notes:
+<p>✔︎ Full/Standalone Installer</p>
+<p>⬆︎ Updater (usually, the main difference from a Full/Standalone Installer is that MAU is not present)</p>
+<p>👟 Insider builds supported (e.g., Insider Fast)</p>
+<p id="override">† There is no dedicated recipe in the repo, but you could override an existing recipe from the set, using the FWLink value listed in the chart as an input key for PRODUCTID (rtrouton) or REGION (arubdesu)</p>
+<p id="20365">‡ The 2016SuiteSKUless recipes in the autopkg/arubdesu-recipes repo actually download the 365/2019 Suite; to get the Office 2016 Suite, override the Office2019SuiteSKUless recipes from the arubdesu/office-recipes repo with the values suggested in the download recipe description</p>
+<p id="onenote">* Recipes available for both OneNote 2016 and 365/2019.</p>
+</blockquote>
+<h3>It’s All About Need</h3>
+<p>This journey we have been on with the Office recipes is a prime example of the unspoken Rule of AutoPkg: people write recipes to suit their own needs (and then share them in case they are of use to others). Why were the core recipes not updated for Office 2019 until this month? Because the maintainer was still using 2016 at their workplace. Why is there a difference amongst the three sets of recipes regarding what Microsoft products they cover? Which recipe types they cover? Because people wrote recipes for the apps <em>they</em> need to deploy and in a format suitable for <em>their</em> management system.</p>
+<p>While the tendency in the community is to avoid duplication of recipes (and effort), these recipe sets use two different techniques to get the desired results,<a href="#foot3" id="ref3"><sup>[3]</sup></a> which also affects which products can be downloaded. I’m personally in favour of biodiversity (binary diversity?) in this instance. The core recipes provide a complete array of options for the most commonly used Microsoft Office products, leveraging the same XML sources that MAU uses. The rtrouton and arubdesu recipes are limited to full installers, but they use Micorsoft’s FWLink codes, thus allowing recipe users to extend current recipes — sometimes by just using an override — to support other products (like the new Office 365 BusinessPro Suite). If you’re picking between the rtrouton and arubdesu recipes, the difference comes down to how they determine the version number of the installer (if at all) and what format that number is (e.g., 16.x.buildNumber versus 16.x.x).</p>
+<p>So look at the chart, look at how you operate, and pick the best recipes for your purposes. If you’re not certain, try one set and see how it goes. Most of you will be well served by using existing recipes and not reinventing the wheel.<a href="#foot4" id="ref4"><sup>[4]</sup></a></p>
+<hr />
+<p id="foot1">[1] I’ve omitted the recipes in the <a href="https://github.com/autopkg/arubdesu-recipes" target="_blank">arubdesu-recipes repo</a> because they don’t do what they say they do, which is download the Office 2016 Suite. See the <a href="#20365" target="_blank">notes on the table in this article</a> for a workaround. <a href="#ref1">[Return to main text]</a></p> 
+<p id="foot2">[2] There were other attempts to come up with a definitive set of Office recipes over the past 8 months or so, but none of those gained enough traction to supplant these as the Top 3, so far as I am aware. <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] I’ve got a blog post that is half-written on this topic that is meant to be a study in different recipe authoring techniques. Hopefully, I’ll get that written sooner than later, although almost certainly after the MacDeployment Conference in June. <a href="#ref3">[Return to main text]</a></p>
+<p id="foot4">[4] Please ignore the fact that I have a MicrosoftMacProductFWLink.download recipe in my jazzace-recipes repo. We wouldn’t want to muddy the waters, would we? (Spoiler: It’s a function of the article I am writing, mentioned in Footnote 3.) <a href="#ref4">[Return to main text]</a></p>
