@@ -1,0 +1,117 @@
+---
+layout: post
+title: 📦 Core or Custom AutoPkg Processors?
+---
+<p>The core AutoPkg processors pack a lot of punch. Everyone who uses AutoPkg depends on them. But sometimes you need something more — or, if you know how to write Python, you can see a much easier and/or elegant solution if you just write some code. The Microsoft Office sets of recipes, which I have written about in <a href="/2019/08/31/multiple-recipes-or-just-override.html" target="_blank">many</a> <a href="/2018/09/16/office-autopkg-recipes.html" target="_blank">previous</a> <a href="/2019/05/18/office-autopkg-recipes-update.html" target="_blank">posts</a>, provide examples of how you can do the same task with a custom processor or without. This post will look at downloading and gathering version information using both methods.</p>
+<p>As in previous Office recipe posts, I will refer to three different recipe solutions:</p>
+<ul><li>The core AutoPkg recipes [<a href="https://github.com/autopkg/recipes" target="_blank">github.com/autopkg/recipes</a> in the <a href="https://github.com/autopkg/recipes/tree/master/MSOfficeUpdates" target="_blank">MSOfficeUpdates</a> folder];</li>
+<li>Rich Trouton’s recipes [<a href="https://github.com/autopkg/rtrouton-recipes" target="_blank">github.com/autopkg/rtrouton-recipes</a> in product-specific folders whose name starts with “Microsoft” or “Office”, with child recipes for Munki from Ben Toms in the <a href="https://github.com/autopkg/datajar-recipes" target="_blank">datajar-recipes repo</a>], excluding the recipes for the full Office Suite;</li>
+<li>The “SKUless” recipes in Allister Banks’ personal (non-project) GitHub repo [<a href="https://github.com/arubdesu/office-recipes" target="_blank">github.com/arubdesu/office-recipes</a>].</li>
+</ul>
+<p>In previous articles, I referred to these as the core, rtrouton, and arubdesu recipes respectively, so I will continue that usage here. However, you may notice that I have added significant qualifiers this time when I specified which recipes are being referenced, primarily to keep the discussion tidier. I am only referring to the SKUless recipes in the arubdesu/office-recipes (the ones designed to download the entire suite) because they offer an approach that is different than the other two major recipe sets and thus are useful for study. (The remainder of that repo is a smörgåsbord of different techniques, sharing code in some cases with the core recipes.) Conversely, I’ve taken the rtrouton Office Suite recipes out of the mix because they are essentially rebranded arubdesu SKUless recipes; the product-specific recipes have a unified approach that is different than the Suite and the core recipes. So with those qualifiers out of the way, let’s look at how each set downloads the desired Office apps.</p>
+<h3>Downloading and Processors</h3>
+<p>The most common workflow we would see in any download recipe is:</p>
+<ol><li>Determine the URI of the item we want to download;</li>
+<li>Download a copy of the item (if we don’t have the current version in hand already);</li>
+<li>Check the code signature of the downloaded item.</li>
+</ol>
+<p>The aforementioned recipes for Office all conform to that. They also do the right thing by inserting an <code>EndOfCheckPhase</code> processor in-between Steps 2 and 3 to properly handle running the recipe with the <code>-c</code> or <code>--check</code> option. The difference is that the core AutoPkg recipes use a custom-built processor to determine the download, and the arubdesu and rtrouton recipes use a core AutoPkg processor.</p>
+<p>So what are some of the advantages and disadvantages to using a custom processor over core processors (and vice versa)?</p>
+<table>
+	<thead>
+	<tr> <th></th>	<th>Custom Processor</th>	<th>Core Processors</th> </tr>
+	</thead>
+	<tbody>
+	<tr valign=top> <th>Advantages</th> 
+		<td><ul>
+			<li>Can deal with complex/unique download and/or versioning situations</li>
+			<li>Customized for that product</li>
+			<li>Can be coded to use human-friendly Input values</li>
+			<li>Can be more efficient</li>
+			<li>Allows addition of features not currently covered by core processors</li>
+		</ul></td>
+		<td><ul>
+			<li>Processors have already been vetted by hundreds of users</li>
+			<li>Processors are well-documented (including changes) and perform common tasks</li>
+			<li>Recipe author does not need to be able to code in Python</li>
+			<li>Easier to audit recipes for trust (especially if you don’t know Python)</li>
+		</ul></td>
+	</tr>
+	<tr valign=top> <th>Disadvantages</th> 
+		<td><ul>
+			<li>Requires knowledge of Python to write a custom processor</li>
+			<li>Requires knowledge of Python or a good testing scheme to audit a custom processor for trust</li>
+			<li>If you can’t write Python and the custom processor requires an update, you have to wait for someone else to do it</li>
+		</ul></td>	
+		<td><ul>
+			<li>Limited by what existing processors can do</li>
+			<li>May require extra steps to do the same thing as a custom processor does (if possible at all)</li>
+			<li>Often less efficient, code-wise (if you care about such things)</li>
+		</ul></td>
+	</tr>
+	</tbody>
+</table>
+<blockquote>
+Sidebar: While not applicable in this case, there is another variety of processor called a Shared Processor. It is a custom processor (usually general-purpose in nature) that is not part of the Core processors but is posted in GitHub and meant to be shared amongst recipes. Its advantages and disadvantages sit between Core and Custom. For more information on Shared Processors, <a href="https://github.com/autopkg/autopkg/wiki/Processor-Locations" target="_blank">see the AutoPkg wiki.</a>
+</blockquote>
+
+<p>In this case, the reason these recipes selected a custom processor over a core processor or vice versa boiled down to the source used to determine the location of the desired download.</p>
+
+<h3>What’s Your Source?</h3>
+<p>When writing AutoPkg recipes, we want to get as an authoritative source as possible for our downloads (and versioning, for that matter). If the application has an updating mechanism built in, our recipes are less likely to break if we use the same data source as that mechanism. This explains the presence of the GitHubReleasesInfoProvider and SparkleUpdateInfoProvider in the core processors. Both of those parse an update feed which will provide appropriate download links and version information for downloads hosted by GitHub or managed by Sparkle respectively. Microsoft rolls their own update mechanism: Microsoft AutoUpdate (MAU).</p>
+<p>The core recipes figured out how to parse the feed that MAU uses in order to download the software requested by the user — definitely an authoritative source. Using this feed gave the authors a lot of flexibility in supporting test builds such as Insider Slow and Insider Fast. Basically, as long as the processor authors were willing to write the code to support selecting those options via Input variables, users could access them with AutoPkg. This accounts for the large number of lines of code in the core recipes’ processor. This also gives the recipe user the most straightforward usage: they can use a combination of meaningful words like “Production”, “latest”, and “Excel2019” as input values to direct what to download. While the original Office 2011 recipes focussed on updaters (expecting that you would be manually downloading the full installer from your volume license portal and deploying that first), the current set of recipes supports downloading full installers for the most common individual apps. (A <a href="/2019/05/18/office-autopkg-recipes-update.html#recipechart" target="_blank">full chart</a> is available in my May 2019 post.)</p>
+<p>The rtrouton and arubdesu recipes use a different source, but arguably just as authoritative. Microsoft has assigned a number to each product in its arsenal (called an FWLink), such that if you type <code>https://go.microsoft.com/fwlink/?linkid=</code> and then the appropriate 6- or 7-digit FWLink number into your browser, it will download the installer for the most current version of the appropriate product.<a href="#foot1" id="ref1"><sup>[1]</sup></a> The rtrouton and arubdesu recipes leverage this, and can therefore use the core <code>URLDownloader</code> processor. This methodology came in handy during the transition to Office 365/2019, when new FWLink numbers came into existence and the numbers you had been using may or may not have been pointing to the variant (2016 or 365/2019) that you needed or expected. With the arubdesu SKUless recipes, you could just change one input key in your override to download the correct product. In contrast, the core recipes required code changes to the custom processor.</p>
+<p>To summarize, here’s how each recipe set obtains their download:</p>
+<table>
+	<thead>
+	<tr> <th>Download</th>	<th>Collects Via</th>	<th>Source</th> </tr>
+	</thead>
+	<tbody>
+	<tr> <th>core</th>	<td>Custom processor</td>	<td>Microsoft AutoUpdate XML</td> </tr>
+	<tr> <th>rtrouton</th>	<td>Core processor</td>	<td>Microsoft FWLink</td> </tr>
+	<tr> <th>arubdesu</th>	<td>Core processor</td>	<td>Microsoft FWLink</td> </tr>
+	</tbody>
+</table>
+
+<h3>Versioning</h3>
+<p>The next thing to look at is obtaining version information for your download. There is a bit of a difference of opinion in the community about where in the recipe chain you should collect such information. From a purely philosophical point of view, it has been my position that download recipes should just do the steps I outlined earlier, and the AutoPkg documentation generally supports this stance: download recipes download, pkg recipes package, <cite>etcetera</cite>. Since most pkg recipes add version information to the package name, it is common to collect that information in the pkg recipe. But if you use a management system like Munki that can install items using formats other than packages (e.g., from an app inside a disk image), a pkg recipe may not be necessary. In those cases, collecting version information inside the download recipe seems sensible. It’s because of this that I have softened my stance on this issue, since one of the real powers of AutoPkg is feeding your management system. Collecting version information in a download recipe may add inefficiency, but it’s one less thing other users have to worry about when writing a child recipe for their management system. Regardless, you will see version information being collected in both download and pkg recipes out in the wild.</p>
+<p>Let’s look at how the three sets of Office recipes we are examining collect version information:</p>
+<table>
+	<thead>
+	<tr> <th>Versioning</th>	<th>Collects Via</th>	<th>Source</th>	<th>Format</th> <th>Recipe</th>	</tr>
+	</thead>
+	<tbody>
+	<tr> <th>core</th>	<td>Custom processor</td>	<td>Microsoft AutoUpdate XML</td>	<td>16.x.build</td> <td>download</td> </tr>
+	<tr> <th>rtrouton</th>	<td>Core processors</td>	<td>pkg contents</td>	<td>16.x.build</td> <td>pkg</td> </tr>
+	<tr> <th>arubdesu</th>	<td>Custom processor</td>	<td>macadmins.software XML</td>	<td>16.x.x</td> <td>download</td> </tr>
+	</tbody>
+</table>
+<p>Microsoft provides their downloads in pkg format<a href="#foot2" id="ref2"><sup>[2]</sup></a> — not even wrapped in a disk image — and these do not have application version information available to be easily parsed (e.g., by the <code>Versioner</code> processor). So we either need another source or we have to do some spelunking.</p>
+<p>In the case of the core recipes, the MAU XML file that provided the download link also has a version number field, so the custom processor picks that information up along the way — that’s a sensible, efficient way to do it. The other two recipe sets do not parse that XML file, so they need another method.</p>
+<p>The arubdesu recipes chose to write a custom processor whose sole <cite>raison d’être</cite> is to collect the version information. It parses a <a href="https://macadmins.software/latest.xml" target="_blank">different XML file</a>, manually being maintained by Paul Bowden of Microsoft, that gives the simpler 16.x.x version number, and since Microsoft doesn’t do silly things like have more than one release of a point update (like a particularly fruit company with their OS updates), this value should also work well with management systems. The main objection I’ve heard to the use of this source for version numbers is that it is manually (not automatically) generated. That means it could be out of sync with the actual package you are downloading.</p>
+<p>In both the core recipes and arubdesu download recipes, gathering the version number via a custom processor allows those recipes to name the package with the version number included.<a href="#foot3" id="ref3"><sup>[3]</sup></a> This is why the arubdesu download recipe gathers the version information before actually downloading the installer. For the core recipes, both those functions are within the same processor, so from a user perspective they happen simultaneously.</p>
+<p>The rtrouton recipes take another common approach: examine the download and get the version information from there. As long as the vendor hasn’t done something stupid with version numbers (by commission or omission), this is the most authoritative source. In the case of the main Office suite apps (Word, Excel, PowerPoint, etc.), you have to dig down a fair distance into the installer to get the version information, but it is there and it is in a repeatable, specific location. And what else is AutoPkg for if not to automate repetitive tasks? Rich cleverly figured out a way to extract that information using just the core processors. As an example, let’s take a look at his steps to download Microsoft Excel 365 and the processors he used:</p>
+<table>
+	<thead>
+	<tr> <th>Step</th>	<th>Recipe</th>	<th>Processor</th>	<th>Notes</th> </tr>
+	</thead>
+	<tbody>
+	<tr> <th>1</th> <td rowspan=3 valign=top><a href="https://github.com/autopkg/rtrouton-recipes/blob/master/MicrosoftExcel365/MicrosoftExcel365.download.recipe" target="_blank">download</a></td>	<td>URLDownloader</td>	<td>download pkg installer; name it Microsoft_Excel.pkg by default</td> </tr>
+	<tr> <th>2</th> <td>EndOfCheckPhase</td>	<td>included for those using the <code>--check</code> option</td> </tr>
+	<tr> <th>3</th> <td>CodeSignatureVerifier</td>	<td>verifies code signature of download</td> </tr>
+	<tr> <th>4</th> <td rowspan=6 valign=top><a href="https://github.com/autopkg/rtrouton-recipes/blob/master/MicrosoftExcel365/MicrosoftExcel365.pkg.recipe" target="_blank">pkg</a></td>	<td>FlatPkgUnpacker</td>	<td>unpacks the installer into <code>downloads/unpack</code> directory inside the recipe cache</td> </tr>
+	<tr> <th>5</th> <td>FileFinder</td>	<td>find the filename of the pkg installer that has the Excel app inside of it</td> </tr>
+	<tr> <th>6</th> <td>PkgPayloadUnpacker</td>	<td>unpack the payload of the pkg installer located in the previous step into <code>downloads/payload</code></td> </tr>
+	<tr> <th>7</th> <td>Versioner</td>	<td>extract the version information from the Excel app revealed by the previous processor (16.x.buildnumber format)<a href="#foot4" id="ref4"><sup>[4]</sup></a></td> </tr>
+	<tr> <th>8</th> <td>PkgCopier</td>	<td>copy the pkg originally downloaded, renaming it with the version number appended</td> </tr>
+	<tr> <th>9</th> <td>PathDeleter</td> <td>delete the originally-downloaded pkg and all the unpacked versions, leaving just the renamed pkg</td> </tr>
+	</tbody>
+</table>
+<p>The split between .download and .pkg recipes makes great sense here. The download recipe does fetch a pkg, but it is not in the desired format for Rich’s management system. So if you don’t need version information, you could use his download recipe as a parent. If you do, the pkg recipe can be your parent. And since the pkg recipes only use core processors, you don’t have to write any Python.</p>
+<h3>Take Your Pick</h3>
+<p>When writing your own recipes, the choice between using core or custom processors will probably come down to whether you can write Python or not. The core processors cover a lot of ground, and <a href="https://github.com/autopkg/autopkg/wiki/Noteworthy-Processors" target="_blank">popular shared processors</a> fill some other gaps. But for some of you, not being able to solve a particular problem with AutoPkg could become the reason to learn a little Python. The original authors of AutoPkg strongly believed in making this project extensible. Whether you do that by creative use of existing processors or writing your own is up to you.</p>
+<hr />
+<p id="foot1">[1] People have argued that the MAU feed is a better “source” than the FWLink numbers, but I find them to be equally authoritative. FWLink numbers are incredibly stable (they only seem to need attention around a major version change, like we saw from Office 2016 to 2019) and can be found on Microsoft’s site <a href="https://docs.microsoft.com/en-ca/officeupdates/update-history-office-for-mac" target="_blank">if you search around</a>. One should not conflate the fact that many Mac Admins refer to a <a href="https://macadmins.software" target="_blank">manually-maintained web site</a> (by Paul Bowden of Microsoft, as a courtesy to our community) with the fact that FWLink numbers are fully supported by Microsoft. I would agree, however, that scraping the macadmins.software home page to determine the download link (using the <code>URLTextSearcher</code> processor) would be one level less authoritative, since it’s a manually-maintained page that is not on Microsoft’s web site. Sometimes, we write recipes with less-authoritative sources because there is no choice, but this is not one of those situations. <a href="#ref1">[Return to main text]</a></p>
+<p id="foot2">[2] By convention, most recipe authors call any recipe that does the initial download a .download recipe, but it would not have been “wrong” to call it a .pkg recipe. As you’ll find out in a moment, there are benefits to sticking to that convention. <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] Microsoft actually includes version information in the pkg name if you download it manually (I’ve only tested with the FWLink-based downloads), but the AutoPkg code as it stands as I write this is not able to capture that information and thus requires the recipe author to provide a name for the download. So if you want a version number in your filename, you have to determine it yourself. As best as I can determine, the version number is not retained in the filename because the actual download location is provided by a redirect on the server side. <code>URLDownloader</code> only checks for that filename based on the original URL provided. One could rewrite the code to check again for the filename being received if there is a redirect, but there seems to be little interest in this. For these recipes, it would allow some simplification, and might even eliminate the need for the rtrouton set to have a pkg recipe in the chain at all. <a href="#ref3">[Return to main text]</a></p>
+<p id="foot4">[4] Recent releases of the primary Office apps now have the 16.x.x version stored in CFBundleShortVersionString, so you could ask <code>Versioner</code> for that version number rather than 16.x.buildnumber. Previously, it would have required extracting the number using the <a href="https://github.com/autopkg/homebysix-recipes/tree/master/VersionSplitter" target="_blank">shared processor <code>VersionSplitter</code> by Elliot Jordan</a>, adding an extra step. <a href="#ref4">[Return to main text]</a></p>
