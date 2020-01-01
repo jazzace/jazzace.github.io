@@ -16,11 +16,13 @@ title: outset Out of the Ordinary
 <h3 id="july21">Update - July 21</h3>
 <p>My test using a Mac mini (Late 2012) pretty much confirmed all of my findings. You see, just as I was getting ready to test, a <a href="https://support.apple.com/kb/DL1828">firmware update for the Late 2012 Mac minis</a> was released. So I ended up testing the Mac mini in the same way as I tested the iMac before it. The result was basically the same: with a firmware update in the softwareupdate payload, the installer stalled (with the progress bar at about 50% in this case) and a manual shutdown was necessary, even after letting the Mac mini sit overnight (~16 hours). Once I manually applied the Firmware update to the Mac mini, I then nuked the boot volume using a DeployStudio workflow that deployed a minimal 10.10.3 image, added outset, and put the softwareupdate script in the firstboot-scripts folder with the proper ownership and (luckily) permissions. When it rebooted, softwareupdate worked properly (even rebooting on its own, if I observed correctly). I may repeat this test again for completeness, but for now, it sure looks like the softwareupdate script method could "just work" so long as there were no complicating updates.</p>
 <p>For the record, I used the following script:</p>
-<code>#!/bin/sh
+<pre>
+#!/bin/sh
 # make sure we are using Apple SUS because of issues with our own
 defaults delete /Library/Preferences/com.apple.SoftwareUpdate CatalogURL
 # and now the real reason for this script:
-softwareupdate --install --all</code>
+softwareupdate --install --all
+</pre>
 <p>The defaults command actually failed on the specific image I was using, but it did not stop execution of the softwareupdate command. You could specify which item you wanted to install, but this was more general purpose.</p>
 <p>Of course, the random thought in my mind is: could <a href="https://github.com/grahamgilbert/imagr">Imagr</a> + outset be a DeployStudio replacement for some based on this? (This assumes your needs are simple and Munki/Casper are not going to be deployed.)</p>
 <hr/>
