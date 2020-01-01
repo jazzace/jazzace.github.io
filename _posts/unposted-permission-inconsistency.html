@@ -1,0 +1,58 @@
+---
+layout: post
+title: Permissions Purgatory
+---
+<p>What happens when you want to share a file on your local network so that two people can work on it? The answer in my household is “nothing consistent.” I spent a fair bit of my time off at the end of 2018 tracking down a long-standing problem with one particular file my wife and I were sharing, hosted on my desktop Mac. Every time she would work on the file from her Mac (via file sharing) and save it, my account would lose the ability to edit it; I would have to change permissions manually to re-enable access. To help narrow things down, I tested files created with other apps to see how they behaved as well. In the end, I found three distinct behaviour patterns, which is probably two too many. These are repeatable, so this blog post aims to document those behaviours for the curious Mac Admin and lets you duplicate my exact steps so that you can play along, workshop-style, and add your own variations.</p>
+<h3>The Setup</h3>
+<p>To replicate my results, you’ll need two Macs: a host Mac and a second “client” Mac on the same network (in my personal scenario, my desktop Mac and my wife’s laptop Mac). I found in my testing that you can replace the client Mac with a VM on the host Mac and get the same results, which should be easier for most to test.</p>
+<p>You’ll need to configure your host Mac with:</p>
+<ul>
+<li>1 Standard local user account (administrator privileges are not required)</li>
+<li>1 “Sharing Only” local user account (i.e. the user can connect for file sharing but does not have a home directory on the system)</li>
+<li>A group that contains both of these accounts (you can create this using System Preferences > Users & Groups > + button)</li>
+<li>A shared directory on the host Mac (mine was created inside /Users/Shared)</li>
+</ul>
+<p>You’ll need the same app(s) for testing on both client and host.</p>
+<h3>The Testing Workflow</h3>
+<p>Here are the steps that I followed for each test:</p>
+<ol>
+<li>Login to the local user account on the host Mac.</li>
+<li>Open the desired app and create a new file. Save it on the host Mac in the shared directory you set up (or any child directory thereof).</li>
+<li><em>Break Point:</em> Inspect the permissions on the file (<code>ls -le</code>).</li>
+<li>If necessary, add an Access Control Entry (ACE) to the Access Control List (ACL) for that file such that the group that contains the two users has read and write access to the file (e.g., in the Finder, select the file, then File > Get Info, add a new entry to Sharing & Permissions using the + button where the group defined earlier gets Read & Write permissions). Re-inspect permissions to confirm.</li>
+<li>From any account on the client Mac, connect to the host Mac over SMB using the “Sharing Only” account credentials (e.g., in the Finder, Go > Connect to Network, select the host Mac > Connect As…).</li>
+<li>While connected from the client computer, open the file, make a change, then Save and Close the file in the same location on the host computer (do not Duplicate… or Save As…).</li>
+<li><em>Break Point:</em> Inspect the permissions on the file.</li>
+<li>Go to the host computer and try to open the edited file. If successful, make a change, Save, and Close.</li>
+<li><em>Break Point:</em> Inspect the permissions on the file.</li>
+<li>Switch back and forth between opening the file from the client and the host until you are satisfied that both users can edit the file without affecting the other user’s access (or until it fails).</li>
+</ol>
+<!--
+<h3>Why Not POSIX-compliant (UNIX-style) Permissions?</h3>
+<p>If this were back in my undergrad days when I worked on UNIX mainframes, the obvious solution would have been to change the current group in the UNIX permissions, give the group Read and Write permissions, and assume that the permissions would hold. But this is not the 1980s; a lot of things have changed. When troubleshooting some problems with my Mac-based file server at work some time ago, I had heard counsel that using an ACL was more reliable in such a setup. Taking that advice did indeed solve a lot of problems for me, but I had not delved into the “why” of it. My tests showed the reasons quite clearly.</p>
+<p>I found that I could get the group to automatically be assigned to the new file but not its permissions. So if you ran the above steps by changing the group and its permissions rather than using an ACL, you should find that the Read/Write/Execute permission values for the group (and owner and others) would change to default values upon saving the file. That’s generally 644 (owner rw, group r, others r), which is not sufficient for our task. With an ACL, I can apply the <code>file_inherit</code> (and <code>directory_inherit</code>) attribute on a directory such that any files (and directories) created in that directory inherit the permissions of their parent.</p> -->
+<h3>The Results</h3>
+<p>I found that I could group my results into three categories:</p>
+<ol>
+<li>apps that use a <strong>traditional</strong> file saving methodology (commonly, the File menu has a “Save As…” command in such apps),</li>
+<li>apps that use a modern, OS-based <strong>autosave</strong> methodology (like most of the apps made by Apple), and </li>
+<li>the app that led me to investigate further (which I shall call <strong>Rogue One</strong> for now, but it is one that many of you may have used).</li>
+</ol>
+<p>I identified three Break Points above (plus an optional one between the first two) where we want to check our permissions progress. In chart form, here are my results:</p>
+<table>
+	<thead>
+	<tr> <th>Break Point 1</th>	<th>ls -le</th> </tr>
+	</thead>
+	<tbody>
+	<tr> <th>Traditional</th> <td>R1C1</td> </tr>
+	<tr> <th>Autosave</th> <td>R2C1</td> </tr>
+	<tr> <th>Rogue One</th> <td>R3C1</td> </tr>
+	</tbody>
+</table>
+
+
+
+
+My hope is that someone who knows more about permissions and the associated voodoo will write an explanatory blog post, perhaps even opining which apps are doing it “right” and which are not.</p>
+
+the more disturbing thing was that the behaviour varied among other apps I tested. You would think permissions would be a solved problem by now, but apparently not. The point of this post is to point you towards techniques that will give you more consistent results (and, if we’re lucky, a spin-off post by some other Mac Admin blogger )

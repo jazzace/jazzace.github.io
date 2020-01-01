@@ -1,0 +1,27 @@
+---
+layout: post
+title: Office 2016 VL Deployment Q and A
+---
+<p>This document aims to provide answers to key questions regarding deployment of Office 2016 for Mac under a volume licensing agreement. It relies heavily on information from the <a href="http://macadmins.org">MacAdmins Slack</a> and the following references:</p>
+<ul><li>Demystify Office 2016 for Mac (Clayton Burlison): <a href="https://clburlison.com/demystify-office2016/" target="_blank">https://clburlison.com/demystify-office2016/</a></li>
+<li>Microsoft Office 2016 for Mac Downloads (Paul Bowden, Microsoft): <a href="https://macadmins.software" target="_blank">https://macadmins.software</a></li></ul>
+<hr />
+<h3 id="serial">I would like to include Office 2016 (or a subset of its apps) in my (re-)deployment image. Can I do this?</h3>
+<p>Yes and no. You may include the Office 2016 apps in your image if you choose, but the volume licensing mechanism is tied to the boot drive of the machine, so you will need to <strong>run the VL Serializer pkg</strong> (found on the Volume License installer dmg as of version 15.17) on the booted system <strong>after you deploy your image.</strong> For example, DeployStudio users could include the VL Serializer pkg in their workflow, selecting the "Postponed Installation" option so that it would be installed on first boot. <cite>Note: In a future release of Office 2016, Office apps will check for a valid VL serialization on each launch. Currently, they check periodically, so while it <u>might</u> work if you bake the VL serializer or the resulting plist file into your image, it is destined to fail eventually. (The originally scheduled release for this was 15.20, but it has been held back.)</cite></p>
+<h3>If I choose to include (unserialized) Office 2016 into a deployment image, what installer type(s) can I use?</h3>
+<p>If you are creating an image modularly (e.g., using AutoDMG), you need Standalone (individual app) installers, available from http://macadmins.software. In future, it may be possible to use SKU-less (a.k.a. Office 365/Retail) as well, but there is currently an issue with the postflight script that prevents proper installation on a non-booted volume.</p>
+<p>If you are still using the Golden Machine method, you can use either SKU-less (O365/Retail) for the full suite or Standalone for individual apps.</p>
+<p>You did read the <a href="#serial">first question,</a> right? You still have to serialize each individual machine after image deployment.</p>
+<h3>If I choose to automatically install Office on first boot (i.e. command line install automated by DeployStudio, Munki, Casper, etc.), which installers can I use?</h3>
+<ol>
+  <li>Volume License. This gives you the full suite and does the volume licensing for that machine. (If you are using Munki, you can use a ChoiceChangesXML file to exclude any apps you do not want to install.) The only downside is that the VL installer is often a version or two version behind the current Office365/Retail release.</li>
+  <li>SKU-less (Office365/Retail). This gives you the full suite and the most recent version available. (The same comment about ChoiceChangesXML for Munki applies here.) In your workflow, install this followed by the VL Serializer pkg, which you retrieve from the Volume License installer dmg (15.17 and later).</li>
+  <li>Standalone or Standalone VL. If you just want individual apps from the suite, you can use these installers. If you are the Volume License administrator, you can obtain such installers with the VL installer baked in. If you only have access to the full suite VL installer dmg, you can use the same method as SKU-less, where you install one or more of the app installers and then install the VL serializer pkg. <cite> Note: The VL Serializer only works if an Office 2016 app is already installed. Sequence your installers accordingly.</cite> The down side of this method is that installers for each app contain duplicate resources because of sandboxing, so they require more deployment storage/bandwidth.</li>
+</ol>
+<h3>If I don't want Microsoft Auto Updater (MAU) to provide updates, how can I control that?</h3>
+<ol>
+  <li>You can choose not to install MAU if the tool you use supports it. For example, if you are using Munki, you can create a ChoiceChangesXML file that tells it not to install it from Standalone &amp; SKU-less installers (see https://github.com/arubdesu/microsoft-recipes for details). You can also use this technique to take a full suite installer and exclude apps you don't want (e.g., not installing Outlook on a shared machine). You would then retrieve updaters (combo or the upcoming delta updaters) manually (e.g., from the http://macadmins.software page) or using <a href="https://github.com/arubdesu/microsoft-recipes">AutoPkg recipes.</a></li>
+  <li>Use a profile to tell MAU to never check for updates (e.g., <a href="https://github.com/gregneagle/profiles/blob/master/autoupdate_disablers/disable_autoupdates_microsoftautoupdater.mobileconfig">Greg Neagle has one on GitHub</a>). MAU will still be installed, and could be run manually, unless you go further and prevent it from launching with another configuration profile.</li>
+</ol>
+<hr/>
+<p><cite>Originally posted on the University of Calgary Integrated Arts Media Labs web site.</cite></p>
