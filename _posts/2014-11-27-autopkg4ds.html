@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Feeding AutoDMG and DeployStudio with AutoPkg
+title: 📦 Feeding AutoDMG and DeployStudio with AutoPkg
 ---
 <a href="https://github.com/autopkg/autopkg" target="_blank">AutoPkg</a> has quickly become the Mac Admin's favourite tool for fetching third party software updates and feeding it in to their software management system. <a href="https://github.com/munki/munki" target="_blank">Munki</a> support for this tool came early. Then, Allister Banks <a href="https://gist.github.com/arubdesu/8190980">added support for those who use Casper,</a> which has since been built upon by Shea Craig. I've also noticed efforts to make AutoPkg work with SCCM by <a>Chris Gerke.</a> But for those with smaller deployments—or even those who are just converting away from Golden Machine image baking—it would be nice to use AutoPkg to automate much of the manual work that is still necessary. Whether updating an image created modularly (e.g., with <a href="https://github.com/MagerValp/AutoDMG" target="_blank">AutoDMG</a>) or updating the packages that we install as a part of our <a href="http://deploystudio.com" target="_blank">DeployStudio</a> workflow (or both), AutoPkg has the ability to do just that. Here's a quick guide.</p>
 <h2>AutoPkg Itself</h2>
