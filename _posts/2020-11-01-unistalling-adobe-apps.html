@@ -1,0 +1,46 @@
+---
+layout: post
+title: Uninstalling Adobe Apps Using a Shell Command and Jamf Pro
+---
+<p>Recently, Adobe released the 2021 versions of some of its Creative Cloud apps like Photoshop, Illustrator, and InDesign.
+Strangely, their video-centric apps did not get the major version upgrade but were bumped to a x.5 version number instead.
+So now we have the unusual situation where using the Remote Update Manager tool (a.k.a. RUM) will update some of your apps but not all of them. To upgrade to the new 2021 versions, you need to install them separately and then uninstall the 2020 versions (to recover the internal disk space and avoid versioning issues).</p>
+<p>Adobe offers a number of ways to do the uninstall:</p>
+<ul><li>Run the Uninstaller package that was created at the same time as the full installer.</li>
+<li>Run the Uninstaller whose alias is included in the Adobe app’s folder.</li>
+<li>Create a new uninstaller using the old Creative Cloud Packager tool.</li>
+<li>Trigger an uninstall process using a shell command with specific information about which app you wish to uninstall.</li>
+</ul>
+<p><a href="https://twitter.com/foigus/status/1316699625567531017" target="_blank">A tip from Patick Fergus</a> led me to that last one, which is what I will be using for the computer labs I manage. Since that technique is not very well known, I thought it was worth blogging about, especially for those of you whose MDM is Jamf Pro, where you can leverage its ability to supply parameters to a shell script to make a very flexible solution.</p>
+<h3>It’s Documented!</h3>
+<p>Adobe describes the command line method here:</p>
+<ul><li><a href="https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/using/uninstall-creative-cloud-products.ug.html#macos-terminal" target="_blank">https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/using/uninstall-creative-cloud-products.ug.html#macos-terminal</a></li>
+</ul>
+<p>Essentially, Adobe has an executable located at <code>/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup</code>. This Setup command allows you to uninstall an app by specifying its sapCode (similar to the four-character Creator code found in Classic Mac OS) and which major version (baseVersion) should be removed. A chart of the possible codes are listed on this page:</p>
+<ul><li><a href="https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/kb/apps-deployed-without-base-versions.ug.html" target="_blank">https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/kb/apps-deployed-without-base-versions.ug.html</a></li>
+</ul>
+<p>For example, here are the codes for the apps I mentioned earlier and the baseVersion corresponding to the 2020 release:</p>
+<table>
+	<thead>
+	<tr> <th>App Name</th>	<th>sapCode</th>	<th>baseVersion (2020)</th> </tr>
+	</thead>
+	<tbody>
+	<tr> <td>Photoshop</td>	<td>PHSP</td>	<td>21.0</td> </tr>
+	<tr> <td>Illustrator</td>	<td>ILST</td>	<td>24.0</td> </tr>
+	<tr> <td>InDesign</td>	<td>IDSN</td>	<td>15.0</td> </tr>
+	</tbody>
+</table>
+<p>Thus, the command to remove Photoshop 2020 from a machine would be:</p>
+<pre>"/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup" --uninstall=1 --sapCode=PHSP --baseVersion=21.0 --platform=osx10-64 --deleteUserPreferences=false</pre>
+<p>You need to run this command as root (e.g., prepend with <code>sudo</code> if running from Terminal in an admin account on the machine in question), otherwise it will report an Error Code 105. If the app is not present at all, it will return an Error Code 135.</p>
+<h3>Leveraging Jamf Pro</h3>
+<p>Prior to getting my lab Macs enrolled into the Jamf Pro MDM, I probably would have used Apple Remote Desktop to send that command as root, adding lines for each additional app I needed to remove. But since you can specify parameters for a script used in a Jamf Pro policy, I can write a more flexible script and call it with whatever pair of variables I need. So I wrote the simplest of shell scripts to achieve this. Here it is (without the documenting comments that I have included in my production version):</p>
+<pre>#!/bin/sh
+"/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup" --uninstall=1 --sapCode="$4" --baseVersion="$5" --platform=osx10-64 --deleteUserPreferences=false</pre>
+<p>Jamf Pro runs scripts as root, so I don’t have to worry about that part. The only change I made from the earlier example is that I inserted the variables <code>$4</code> and <code>$5</code> where the sapCode and baseVersion values would go. I uploaded that script to Jamf Pro using the name UninstallAdobeApp.sh. Now, whenever I need to uninstall an Adobe app of a particular major version — now or in the future — I can create a Policy with a Scripts payload, specifying the sapCode for Parameter 4 and the baseVersion as Parameter 5.</p>
+<img src="/images/202011_uninstall_photoshop.png" srcset="/images/202011_uninstall_photoshop@2x.png 2x" alt="Screenshot from Jamf Pro policy showing use of Parameters 4 and 5" />
+<p>I can also add a Packages payload to such a Policy that installs the new major version that I want, making this a turnkey upgrade for use in managed deployments or in Self Service.</p>
+<p>Because the labs I maintain will be making the move from 2020 versions to 2021 when the current academic Term ends in December, I have a Policy tested and ready to deploy that will call the UninstallAdobeApp.sh script once per app being uninstalled and then install all of the corresponding 2021 apps. (Yes, you can call the same shell script more than once in a Jamf Pro policy. In this case, I’ll just change the parameters for each call.)</p>
+<p>The only detail to consider when pairing an uninstall script and an installation package in a single Policy is whether to set the script Priority to Before or After. If the target Mac is tight on space, you might choose Before. Having said this, if there is an execution error, the error will be reported in the Policy’s log but execution will continue. So you could end up with two versions of the app on the client Mac (if the uninstall fails) or zero versions (if the installation fails). If you have a great deal of control over the client Macs like I do in a Lab setting, you can probably just inspect the logs to make certain everything went well and flush/re-run as needed. But if you’re in a one-to-one deployment situation or are setting this up in Self Service, you may want to put some error trapping into the shell script and run the script using an After priority (e.g., preempt the uninstall if the installation of the new version failed so that the user still has a working app to use).</p>
+<h3>Conclusion</h3>
+<p>Using Adobe’s version-centric command line uninstall feature is a great option for many Mac Admins upgrading Adobe apps between major versions. Jamf Pro’s ability to add script parameters makes it even easier to create a flexible tool that can be leveraged in many current and future situations.</p>
