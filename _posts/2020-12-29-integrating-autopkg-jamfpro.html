@@ -1,0 +1,122 @@
+---
+layout: post
+title: 📦 Integrating AutoPkg into Jamf Pro
+---
+<p>AutoPkg is a tremendous tool for Mac Admins. Some admins only leverage its ability to download the latest versions of the software you deploy in an automated, reliable fashion — that’s still a great value proposition. Some also leverage its ability to post-process those downloaded items to make them more ready for deployment — Jamf Pro admins will be aware that everything needs to be in a .pkg format for deployment with that management system, so automating pkg creation is a time saver. Finally, you can get the full value of AutoPkg by having it upload those packages to your management system and automatically trigger their deployment using the methods required by that system.</p>
+<p>While AutoPkg was built for Munki, it was designed so that it could be extended to other management systems. Some of you may even recall that I built a set of recipes for copying installer packages to the DeployStudio Packages repo, since that was my deployment system at the time. At my place of work, we adopted Jamf Pro as our management system. We are currently only taking advantage of those first two AutoPkg benefits: automating downloads and packaging. If we want to get the full benefit of AutoPkg with Jamf Pro, what choices do we have to integrate the two? I’m going to briefly discuss the four (great) Open Source options you currently have, and do a bit of a case study on the newest entrant, the JamfUploader series of shared processors.</p>
+<h3>Munki</h3>
+<p>Once choice is to deploy <a href="https://github.com/munki/munki" target="_blank">Munki</a> and let it do the work, thus working around some of Jamf Pro’s weaknesses in this regard. The UK company <a href="https://datajar.co.uk" target="_blank">dataJAR</a> has distinguished their MSP by building their deployment business around this with some added integrations (<a href="https://datajar.co.uk/products/auto-update-for-jamf/" target="_blank">"Auto-Update for Jamf"</a>, <a href="https://github.com/dataJAR/jamJAR" target="_blank">“jamJAR”</a>). The human resources needed for Munki implementation and integration are the biggest hurdle — this was the path we were pursuing at my institution until some recent staff cuts made it too difficult to proceed. It is arguably the most powerful option available — commercial or not — and could be migrated should you choose to change to a different MDM platform.</p>
+<h3>JSSImporter</h3>
+<p>Another option is using the <a href="https://github.com/jssimporter/JSSImporter" target="_blank">JSSImporter</a> processor with AutoPkg. It’s not a traditional shared processor; it needs to be located in <code>autopkglib</code>, the same place all the core processors are located. Because of that and some other dependencies, it requires an installer. As its Wiki describes:</p>
+<blockquote>
+The JSSImporter processor adds the ability for AutoPkg to upload packages to a Jamf Pro distribution point, and create scripts, extension attributes, computer groups and policies in a Jamf Pro server (the server formerly known as "JSS"), allowing you to fully-automate your software <strong>testing</strong> workflow.<a href="#foot1" id="ref1"><sup>[1]</sup></a>
+</blockquote>
+<p>Essentially, this was intended to add some Munki-like functionality to Jamf Pro using Jamf Pro’s native tools (e.g., policies, smart groups, Self Service).<a href="#foot2" id="ref2"><sup>[2]</sup></a> Additionally, the user has to install the software using Self Service, which is meant as a safeguard.</p>
+<p>To accomplish all this, it leverages the same API that the Jamf Admin app uses to interact with the Jamf Pro Server. There is a lot of depth in what has been provided by this tool, but it too requires a fair bit of initial setup and general understanding of both how Jamf Pro works and how JSSImporter works with Jamf Pro. It won’t be for everyone, but it does have a community built up around it for help.</p>
+<h3>PatchBot</h3>
+<p>Tony Williams added a new entrant to the party earlier this year: <a href="https://github.com/Honestpuck/PatchBot" target="_blank">PatchBot</a>. Unlike JSSImporter, which deliberately relies on Self Service, the goal of PatchBot is apply patches to managed systems with no intervention by the user or admin. It leverages the Jamf Patch Management system, which was not available when JSSImporter was developed. This excerpt from Tony‘s blog describes the essential process:</p>
+<blockquote>
+When a new version of an application is available a package is built and a patch is sent to a test group, after a set delay the package is moved into production where everyone with the app installed gets a patch to update and our application install policy is updated. […] While it does take some setting up for each application the process requires manual intervention only to stop an application patch package going in to production when a problem is found in a package or to speed it up if you need to deploy a security patch quickly.<a href="#foot3" id="ref3"><sup>[3]</sup></a>
+</blockquote>
+<p>The biggest issue here for some is the reliance on a patch definition feed for Patch Management, since Jamf’s own library of Patch Management titles is a small fraction of the titles AutoPkg can handle. Tony mitigates that by paying for Kinobi from Mondada (a company recently purchased by Jamf), but that expense may not be something everyone can manage. Others may want to wait to see how Jamf integrates Kinobi into Jamf Pro to see if Patch Management can finally become the solution Jamf was promising so many years ago. Nevertheless, it is something that would work for my personal deployments (shared computer labs) if I had faith in where the included version of Patch Management was going for some of the obscure titles I have to deploy.</p>
+<h3>JamfUploader</h3>
+<p>Earlier this month, Graham Pugh released another option that is a variation on the JSSImporter idea: the <a href="https://github.com/autopkg/grahampugh-recipes/tree/master/JamfUploaderProcessors" target="_blank">JamfUploader AutoPkg processors</a>. It takes a more modular approach and benefits from the evolution of AutoPkg, particularly in the area of shared processors. It doesn’t require an installer like JSSImporter or additional automation code like PatchBot, only that you have the grahampugh-recipes repo in your local RecipesRepo folder.</p>
+<p>What do I mean by “modular”? Graham has built five processors that really align well with an AutoPkg mindset. They are <code>JamfScriptUploader</code>, <code>JamfCategoryUploader</code>, <code>JamfComputerGroupUploader</code>, <code>JamfExtensionAttributeUploader</code>, <code>JamfPackageUploader</code>, and <code>JamfPolicyUploader</code>. You don’t have to “buy in” to the whole system like you do with the other three tools. If all you want to do is take the packages you are already generating with AutoPkg and simply upload them automatically to your Jamf Pro server, you can just use the <code>JamfPackageUploader</code> processor without having to understand the rest. Because of the current situation in my case (using AutoPkg but not automatically uploading to our on-premises Jamf Pro Server), this was the perfect tool to use to move the ball forward a little bit without having to expend a lot of human resources (something we are short on at this time). The rest of this blog post will describe three different methods (some more kludgey than others) to use <code>JamfPackageUploader</code> to automate uploads using your already-working AutoPkg setup.</p>
+<p>Much of what I am about to write is already <a href="https://github.com/grahampugh/jamf-upload/wiki/JamfUploader-AutoPkg-Processors" target="_blank">documented in the Wiki for the processors</a>. This is just meant to be a discussion of my hands-on experience with this tool that you may find valuable.</p>
+<h4>The Setup for all three</h4>
+<p>The first requirement is that AutoPkg know about your Jamf Pro Server, stored as variables that the processor(s) can access. Those variables are <code>JSS_URL</code>, <code>API_USERNAME</code>, and <code>API_PASSWORD</code>. You can set those values in one of three ways: by using Input variables in your recipes, by specifying the key-value pairs at the command line when you run the recipes, or (more conveniently) by setting the value of those variables in the environment.</p>
+<p>You can set the value for those variables in the environment with simple <code>defaults write</code> commands at the command line. For example:</p>
+<pre>
+defaults write com.github.autopkg JSS_URL https://jamfproserver.my.org:8443
+</pre>
+<p>Because we have an on-prem Jamf Pro Server at our institution, we also have to set the variable values for the SMB Distribution Point (<code>SMB_URL</code>, <code>SMB_USERNAME</code>, <code>SMB_PASSWORD</code>) in the same manner, otherwise it will not upload. Note that the URL has to include the name of the share at the end. For example:</p>
+<pre>
+defaults write com.github.autopkg SMB_URL https://jamfproserver.my.org:8443/JPSDP
+</pre>
+<p>Because these variables are stored in AutoPkg’s preferences, they will persist between sessions. This is the method I chose to set those variables for my AutoPkg setup; all the examples that follow assume that the values have been set in this way.</p>
+<p>We’ve decided at our institution that we’re going to create a service account to do the uploading from AutoPkg rather than our personal accounts, since the password to said account is going to have to be stored in plain text somewhere on the AutoPkg system (in this example, when we set the values for <code>API_PASSWORD</code> and <code>SMB_PASSWORD</code> using <code>defaults write</code>).</p>
+<h4>Method 1: Call a Post-processor</h4>
+<p>One of the features of AutoPkg that I had not tried before was using a post-processor. It turns out that <code>JamfPackageUploader</code> can be used as a post-processor on a run of a .pkg recipe, thus uploading the resulting pkg to the Jamf Pro Server. The main benefit of running a post-processor in this instance is that you don’t have to write or modify any recipes; your pkg simply uploads once it has been downloaded/generated. For example, if you had an override of the FirefoxSignedPkg.download recipe and you wanted JamfPackageUploader to upload a new version of the pkg if AutoPkg found one, you could run this command:</p>
+<pre>
+autopkg run FirefoxSignedPkg.download --post=com.github.grahampugh.jamf-upload.processors/JamfPackageUploader -k pkg_category=Browsers
+</pre>
+<p>Let’s break that down into parts to understand what that command is doing. We start with the standard <code>autopkg run</code> syntax (I would generally add <code>-vv</code> if I was running this interactively to give me more verbose run information). Don’t worry that I am using a download recipe instead of a pkg recipe in this case; it downloads a pkg, so it already has what we need to upload. Because I stated that we had an override for the recipe, it will find that recipe first in the search order, so we don’t need to worry about overriding trust information.</p>
+<p>The <code>--post</code> flag uses the <a href="https://github.com/autopkg/autopkg/wiki/Processor-Locations#shared-recipe-processors" target="_blank">shared processor syntax</a> that allows AutoPkg to locate the processor. If you look in the <code>grahampugh-recipes</code> repo, there is a <code>JamfUploaderProcessors</code> folder which includes the <code>JamfPackageUploader</code> processor as well as a stub recipe, <code>JamfUploaderProcessors.recipe</code>. That recipe has an identifier of <code>com.github.grahampugh.jamf-upload.processors</code>, which is what we need to address any of the processors in that directory.</p>
+<p>Finally, the <code>-k</code> or <code>--key</code> flag allows us to specify a key/value pair to supply to the recipe(s) being run with this command. Jamf Pro allows you to categorize your installers with whatever terms you wish to define — “Applications” is a common one. We’ve chosen to use “Browsers” at our institution for web browsers, so I wanted to assign that category to my uploaded package. The <code>JamfPackageUploader</code> processor will assign an existing category to a package if you seed its <code>pkg_category</code> variable with that value. In the <a href="https://github.com/autopkg/grahampugh-recipes/tree/master/Jamf_Package_Only_Recipes" target="_blank">sample recipes that Graham has written</a>, you will see that the intended workflow is to specify the category as an Input variable for your recipe (e.g., <code>CATEGORY</code>) and then run the <code>JamfCategoryUploader</code> processor to make sure the category exists (and if not, create it) before running <code>JamfPackageUploader</code>. <a href="https://macadmins.slack.com/archives/C01AVR04ES1/p1608140688452200" target="_blank">I confirmed with Graham</a> that I can skip <code>JamfCategoryUploader</code> because I only want to use the categories we have already configured on our Jamf Pro Server, hence the reason this works as a solo post-processor. If I had not chosen to specify the value for <code>pkg_category</code>, the Category for the uploaded package would be shown by Jamf Pro as “Unknown.”</p>
+<p>Running <code>JamfPackageUploader</code> as a post-processor might get unwieldy at any kind of scale, but if you are using a runner script of some sort, this could certainly be included in same. (Graham even has <a href="https://github.com/grahampugh/jamf-upload/wiki/Standalone-Scripts" target="_blank">separate versions</a> for use as standalone scripts.)</p>
+<h4>Method 2: Alter an Override</h4>
+<p>I promised a kludgy method. If you have an existing override for a recipe that generates a pkg, it is possible to alter your override by adding a <code>JamfPackageUploader</code> processor step with the necessary argument supplied. While overrides do not contain a <code>Process</code> section by default, overrides are <em>just recipes</em>, so adding a Process section is perfectly legal and will be parsed correctly. Here’s the section I would add to my FirefoxSignedPkg.download recipe override to accomplish the upload:</p>
+<pre>
+&lt;key&gt;Process&lt;/key&gt;
+&lt;array&gt;
+	&lt;dict&gt;
+		&lt;key&gt;Processor&lt;/key&gt;
+		&lt;string&gt;com.github.grahampugh.jamf-upload.processors/JamfPackageUploader&lt;/string&gt;
+		&lt;key&gt;Arguments&lt;/key&gt;
+		&lt;dict&gt;
+			&lt;key&gt;pkg_category&lt;/key&gt;
+			&lt;string&gt;Browsers&lt;/string&gt;
+		&lt;/dict&gt;
+	&lt;/dict&gt;
+&lt;/array&gt;
+</pre>
+<p>A reminder that I have specified the Jamf Pro Server and SMB Distribution Point information in the environment, but I could add those values as arguments to the <code>JamfPackageUploader</code> processor if I preferred.</p>
+<h4>Method 3: Make a new child recipe</h4>
+<p>The final method is to write your own recipe. As mentioned earlier, Graham has helpfully provided <a href="https://github.com/autopkg/grahampugh-recipes/tree/master/Jamf_Package_Only_Recipes" target="_blank">example recipes</a> that leverage not just uploading but all the processors included in this project. Graham has claimed the <code>.jamf</code> extension for recipes that use these processors, and for recipes that just use the upload function, <code>-pkg-upload</code> is added to the recipe name by convention (in our example, <code>FirefoxSignedPkg-pkg-upload.jamf</code>). Because I want to use existing categories only, my recipe only has one processor step. The whole recipe looks like this:</p>
+<pre>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+	&lt;key&gt;Description&lt;/key&gt;
+	&lt;string&gt;This recipe downloads the signed installer package that Mozilla made available starting in Firefox 69.0 and 68.1esr 
+and then uploads the pkg to your Jamf Pro Server/Distribution Point using variables set in the environment.
+The grahampugh-recipes repo is required. 
+Note that the CATEGORY specified must exist on the server, otherwise the recipe will fail.
+(For further details on setting the server/share details, see https://github.com/grahampugh/jamf-upload/wiki/JamfUploader-AutoPkg-Processors.)
+&lt;/string&gt;
+	&lt;key&gt;Identifier&lt;/key&gt;
+	&lt;string&gt;com.github.jazzace.jamf.FirefoxSignedPkg&lt;/string&gt;
+	&lt;key&gt;Input&lt;/key&gt;
+	&lt;dict&gt;
+		&lt;key&gt;CATEGORY&lt;/key&gt;
+		&lt;string&gt;Browsers&lt;/string&gt;
+	&lt;/dict&gt;
+	&lt;key&gt;MinimumVersion&lt;/key&gt;
+	&lt;string&gt;2.0&lt;/string&gt;
+	&lt;key&gt;ParentRecipe&lt;/key&gt;
+	&lt;string&gt;com.github.autopkg.download.FirefoxSignedPkg&lt;/string&gt;
+	&lt;key&gt;Process&lt;/key&gt;
+	&lt;array&gt;
+		&lt;dict&gt;
+			&lt;key&gt;Processor&lt;/key&gt;
+			&lt;string&gt;com.github.grahampugh.jamf-upload.processors/JamfPackageUploader&lt;/string&gt;
+			&lt;key&gt;Arguments&lt;/key&gt;
+			&lt;dict&gt;
+				&lt;key&gt;pkg_category&lt;/key&gt;
+				&lt;string&gt;%CATEGORY%&lt;/string&gt;
+			&lt;/dict&gt;
+		&lt;/dict&gt;
+	&lt;/array&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;
+</pre>
+<p>Because I am not including the <code>JamfCategoryUploader</code> processor step as per Graham’s examples, I am unlikely to include this recipe (or others like it) in my public repo (jazzace-recipes) to avoid confusion. If I do, it will probably be with a name like <code>ProductName-pkg-uploadonly.jamf</code>.</p>
+<h3>Choices, Choices</h3>
+<p>There are so many good choices for integrating AutoPkg into your Jamf Pro setup; 2020, for all its problems, has brought us two new options in this regard. Depending on your circumstances, one solution may work better for you than the others. If you’ve been using AutoPkg but have been manually uploading packages to Jamf Pro and you want to start by just automating that bit, the JamfUploader series of shared processors can do that; you can build on that work over time because of its modern, modular design. Happy New Automation Year, Jamf Pro AutoPkg users!</p>
+<table>
+	<thead>
+	<tr> <th>Product</th>	<th>MacAdmins Slack</th>	<th>Code (github.com/)</th>	<th>Documentation (github.com/)</th> </tr>
+	</thead>
+	<tbody>
+	<tr> <th>Munki</th>	<td>#munki</td>	<td><a href="https://github.com/munki/munki" target="_blank">munki/munki</a></td>	<td><a href="https://github.com/munki/munki/wiki" target="_blank">munki/munki/wiki</a></td> </tr>
+	<tr> <th>jamJAR</th> <td>#jamjar</td>	<td><a href="https://github.com/dataJAR/jamJAR" target="_blank">dataJAR/jamJAR</a></td>	<td><a href="https://github.com/dataJAR/jamJAR/wiki" target="_blank">dataJAR/jamJAR/wiki</a></td> </tr>
+	<tr> <th>JSSImporter</th>	<td>#jss-importer</td> <td><a href="https://github.com/jssimporter/JSSImporter" target="_blank">jssimporter/JSSImporter</a></td>	<td><a href="https://github.com/jssimporter/JSSImporter/wiki" target="_blank">jssimporter/JSSImporter/wiki</a></td> </tr>
+	<tr> <th>PatchBot</th> <td>#patchbot</td>	<td><a href="https://github.com/Honestpuck/PatchBot" target="_blank">Honestpuck/PatchBot</a></td>	<td><a href="https://github.com/Honestpuck/PatchBotProcessors" target="_blank">Honestpuck/PatchBotProcessors</a> and <a href="https://github.com/Honestpuck/PatchBotTools" target="_blank">PatchBotTools</a></td> </tr>
+	<tr> <th>JamfUploader</th> <td>#jamf-upload</td>	<td><a href="https://github.com/autopkg/grahampugh-recipes/tree/master/JamfUploaderProcessors" target="_blank">autopkg/grahampugh-recipes/tree/master/JamfUploaderProcessors</a></td>	<td><a href="https://github.com/grahampugh/jamf-upload/wiki/JamfUploader-AutoPkg-Processors" target="_blank">grahampugh/jamf-upload/wiki/JamfUploader-AutoPkg-Processors</a></td>	</tr>
+	</tbody>
+</table>
+<hr />
+<p id="foot1">[1] <a href="https://github.com/jssimporter/JSSImporter/wiki/Home/98c84f5376e52553cc579898605eb9153fd932db" target="_blank">https://github.com/jssimporter/JSSImporter/wiki/Home/98c84f5376e52553cc579898605eb9153fd932db</a> (2020-01-29 version) <a href="#ref1">[Return to main text]</a></p>
+<p id="foot2">[2] No wonder: the bulk of the current code was written by Shea Craig, who had been using Munki <a href="https://sheagcraig.github.io/autopkg/jssimporter/getting-started-with-jssimporter-for-autopkg-pt-1/" target="_blank">until his employer moved to what was then called the Casper Suite.</a> <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] <a href="https://macintoshguy.wordpress.com/2020/07/03/patchbot/" target="_blank">PatchBot – Zero-Touch Packaging and Patch Management</a>, posted 2020 July 03. <a href="#ref3">[Return to main text]</a></p>
