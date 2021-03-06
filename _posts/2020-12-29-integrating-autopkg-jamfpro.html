@@ -31,7 +31,7 @@ defaults write com.github.autopkg JSS_URL https://jamfproserver.my.org:8443
 </pre>
 <p>Because we have an on-prem Jamf Pro Server at our institution, we also have to set the variable values for the SMB Distribution Point (<code>SMB_URL</code>, <code>SMB_USERNAME</code>, <code>SMB_PASSWORD</code>) in the same manner, otherwise it will not upload. Note that the URL has to include the name of the share at the end. For example:</p>
 <pre>
-defaults write com.github.autopkg SMB_URL https://jamfproserver.my.org:8443/JPSDP
+defaults write com.github.autopkg SMB_URL smb://jamfproserver.my.org/JPSDP
 </pre>
 <p>Because these variables are stored in AutoPkg’s preferences, they will persist between sessions. This is the method I chose to set those variables for my AutoPkg setup; all the examples that follow assume that the values have been set in this way.</p>
 <p>We’ve decided at our institution that we’re going to create a service account to do the uploading from AutoPkg rather than our personal accounts, since the password to said account is going to have to be stored in plain text somewhere on the AutoPkg system (in this example, when we set the values for <code>API_PASSWORD</code> and <code>SMB_PASSWORD</code> using <code>defaults write</code>).</p>
@@ -117,6 +117,7 @@ Note that the CATEGORY specified must exist on the server, otherwise the recipe 
 	</tbody>
 </table>
 <p><cite>Updated 2020 December 30 to fix one grammar error and the omission of one of the seven (not five) JamfUploader processors.</cite></p>
+<p><cite>Updated 2021 March 06 to fix the sample command for setting the value of <code>SMB_URL</code>.</cite></p>
 <hr />
 <p id="foot1">[1] <a href="https://github.com/jssimporter/JSSImporter/wiki/Home/98c84f5376e52553cc579898605eb9153fd932db" target="_blank">https://github.com/jssimporter/JSSImporter/wiki/Home/98c84f5376e52553cc579898605eb9153fd932db</a> (2020-01-29 version) <a href="#ref1">[Return to main text]</a></p>
 <p id="foot2">[2] No wonder: the bulk of the current code was written by Shea Craig, who had been using Munki <a href="https://sheagcraig.github.io/autopkg/jssimporter/getting-started-with-jssimporter-for-autopkg-pt-1/" target="_blank">until his employer moved to what was then called the Casper Suite.</a> <a href="#ref2">[Return to main text]</a></p>
