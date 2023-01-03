@@ -5,4 +5,5 @@ description: Anthony Reimer’s blog for Mac Admins that shares what he’s lear
 plugins:
   - jekyll-feed
 author:
-  twitter: anthonyreimer
+  name: Anthony Reimer
+  mastodon: @AnthonyReimer@mastodon.social
