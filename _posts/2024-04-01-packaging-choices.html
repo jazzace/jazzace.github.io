@@ -1,0 +1,106 @@
+---
+layout: post
+title: Packaging Choices — munkipkg, AutoPkg, and GUI-based Tools (📦)
+---
+<p>Recently, I added a new tool (Nicholas Riley’s <a href="https://github.com/jazzace/brightness" target="_blank">brightness</a>) to my colour calibration workflow and thus wanted to add it to the package I had created manually that contained a couple of other colour-related tools and the <a href="https://github.com/macadmins/outset" target="_blank">Outset</a> trigger I run on every login (<a href="/2020/02/01/the-joys-of-colour-calibration.html" target="_blank">as described in a previous blog post</a>). I decided that this was getting involved enough that I should consider building it in a more automated fashion to make future changes easier. I am very comfortable with using the packaging functionality of AutoPkg and knew I could do it with that, but I thought this might be a good opportunity to give <a href="https://github.com/munki/munki-pkg" target="_blank">munkipkg</a> a try, since this seemed to suit its use case. With that in mind, I tried using both munkipkg and AutoPkg for this task and compared both with the GUI-based process I had used previously, discovering the advantages and disadvantages of these methods.</p>
+<h2>pkgbuild</h2>
+<p>But before I describe what I learned there, I should mention pkgbuild, since it is built into the OS and is an underlying tool that all of these other tools leverage. Armin Briegel’s eBook <a href="https://geo.itunes.apple.com/book/packaging-for-apple-administrators/id1173928620?ls=1&mt=11&at=1001lpyX" target="_blank">Packaging for Apple Administrators</a> goes into great detail about using pkgbuild; between that and the <a href="x-man-page://pkgbuild" target="_blank">man page</a>, you should be able to suss out enough information to use it directly to complete the kind of task I am discussing here. Having said this, this task is intricate enough that I want to abstract some of the work, and all the tools I am about to discuss do that well.</p>
+<h2>munkipkg</h2>
+<p>munkipkg is run from the command line, but you do a lot of the work in the Finder: you replicate the target directory structure in a location of your choosing and tell munkipkg to build the package to look like that, adding preinstall and/or postinstall scripts if desired. It does require Python 3, but you will already have a suitable version installed if you have installed <a href="https://github.com/munki/munki" target="_blank">Munki</a>, <a href="https://github.com/autopkg/autopkg" target="_blank">AutoPkg</a>, or <a href="https://github.com/macadmins/python" target="_blank">Mac Admins Python</a>.<a href="#foot1" id="ref1"><sup>[1]</sup></a></p>
+<p>munkipkg will happily create the default structure with the <code>--create</code> option. This consists of folders for payload, scripts, and build, as well as a build-info.plist template. That last file holds build information about the package, such as version number, identifier, and package name. (If you prefer, you can use a JSON or YAML file in its place with the same information.) I did use the <code>--create</code> option to create the initial framework, but since I also had an existing package upon which I was building, I leveraged the <code>--import</code> option to give myself a model from which I could learn (and freely copy).</p>
+<p>I was only placing 4 files and one app bundle with this package, but since the files were deeply nested, I had to create a number of folders within the <code>payload</code> folder it created to complete the structure:</p>
+<div style="background-color: #eee; margin: 0 1em; padding: 1em;">
+⌄ Applications<br/>
+&nbsp;&nbsp;&nbsp;⌄ Utilities<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drop Calibration Profile Here.app<br/>
+⌄ usr<br/>
+&nbsp;&nbsp;&nbsp;⌄ local<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⌄ bin<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;brightness<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;customdisplayprofiles<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⌄ outset<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⌄ login-every<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;script-for-cdp.sh<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;script-for-brightness.sh
+</div>
+<p>Once I had all of those files and folder in place inside my payload, I then modified the build-info.plist provided using a plain text editor to specify details about the package. The munkipkg ReadMe describes all the keys in that plist, but one important key that is relevant here is that the <code>ownership</code> key has a default value of <code>recommended</code>, which in this case means we do not have to manually change the ownership of the above files to root/wheel in our payload hierarchy; munkipkg will do that for us. Another convenient default: the package name includes the version number you specify in that plist (which makes sense, since version info is critical in Munki).</p>
+<p>I also leveraged the ability to sign the package described in the munkipkg ReadMe. In my case, the signing authority was stored in the keychain of the computer, so I just had to add the following keys to the build-info.plist:</p>
+<pre>    &lt;key&gt;signing_info&lt;/key&gt;
+    &lt;dict&gt;
+        &lt;key&gt;identity&lt;/key&gt;
+        &lt;string&gt;My Signing Authority Name&lt;/string&gt;
+    &lt;/dict&gt;
+</pre>
+<p>I did not have a need for a preinstall or postinstall script in this instance, so I left the <code>scripts</code> folder empty.</p>
+<p>With everything now in place, I went to Terminal, changed its current working directory to where I had munkipkg stored, and sent the command <code>munkipkg path/to/folder_I_created_with_create_option</code>, which generated the package and placed it in the <code>build</code> folder within that structure. I took a look at the package using <a href="https://www.mothersruin.com/software/SuspiciousPackage/" target="_blank">Suspicious Package</a> to see what else I had to tweak. While munkipkg did a great job of establishing the correct ownership, the permissions were simply copied from the file. So I had to ensure that all of my executables had execute permission set before building the package (e.g., using the <code>chmod +x</code> command in the Terminal for the items in <code>path/to/payload/usr/local/bin</code> and <code>path/to/payload/usr/local/outset/loginevery</code>).</p>
+<p>All in all, it wasn’t too difficult to build what I needed with munkipkg. Importing an existing package that I understood was really helpful in figuring out how munkipkg works. A little tweak on the executable permissions of my files was all the tweaking required to get a functional package, and is the only main thing I need to remember when creating an updated version of this package.</p>
+<h2>AutoPkg</h2>
+<p>AutoPkg is rightly lauded for its ability to automate the download of the latest version of literally thousands of software titles. But one feature that is often underrated is its ability to build packages programmatically. In this case, only one of the items in the package I want to build would be something I might download in the traditional way AutoPkg would. While this is still not required in order to access the packaging functionality, I decided that I would leverage that download ability in order to access the <a href="https://github.com/timsutton/customdisplayprofiles/releases/tag/v1.0.1" target="_blank">“self-contained” versions of Tim Sutton’s customdisplayprofiles</a> in either Intel or Apple Silicon versions. (You can see this <a href="https://github.com/autopkg/jazzace-recipes/blob/master/Tim%20Sutton/customdisplayprofiles.download.recipe" target="_blank">download recipe in my jazzace-recipes repo</a>. An Input variable lets you select which architecture you want via override.)</p>
+<p>Building the directory structure above is done with the PkgRootCreator processor. Since you need to create the intermediary directories as well, the Processor gets a lot of Arguments:</p>
+<pre>&lt;dict&gt;
+		&lt;key&gt;Processor&lt;/key&gt;
+		&lt;string&gt;PkgRootCreator&lt;/string&gt;
+		&lt;key&gt;Arguments&lt;/key&gt;
+		&lt;dict&gt;
+				&lt;key&gt;pkgdirs&lt;/key&gt;
+				&lt;dict&gt;
+						&lt;key&gt;Applications&lt;/key&gt;
+						&lt;string&gt;0775&lt;/string&gt;
+						&lt;key&gt;Applications/Utilities&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+						&lt;key&gt;usr&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+						&lt;key&gt;usr/local&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+						&lt;key&gt;usr/local/bin&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+						&lt;key&gt;usr/local/outset&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+						&lt;key&gt;usr/local/outset/login-every&lt;/key&gt;
+						&lt;string&gt;0755&lt;/string&gt;
+				&lt;/dict&gt;
+				&lt;key&gt;pkgroot&lt;/key&gt;
+				&lt;string&gt;%RECIPE_CACHE_DIR%/payload&lt;/string&gt;
+		&lt;/dict&gt;
+&lt;/dict&gt;
+</pre>
+<p>Next, the recipe needs to copy the five items into their place in the newly-created package payload structure. With customdisplayprofiles, I know the location of the downloaded item from the parent recipe, so I can move it in to place directly.<a href="#foot2" id="ref2"><sup>[2]</sup></a> With all the others, I need an Input variable whose value is the path to the file I want copied. For example,</p>
+<pre>&lt;key&gt;Input&lt;/key&gt;
+&lt;dict&gt;
+	&lt;key&gt;BRIGHTNESS_PATH&lt;/key&gt;
+	&lt;string&gt;/Volumes/AutoPkgLibrary/AutoPkg/Files/brightness&lt;/string&gt;&lt;
+[...]
+</pre>
+<p>I then use variable substitution (e.g., <code>%BRIGHTNESS_PATH%</code>) to tell the Copier processor where to find the item. While a bit tedious, this allows me to store the items being packaged anywhere on my system. I don’t have to compile them in a particular location — AutoPkg does that for me. This could be quite advantageous if you are managing any of these items using Git or some other version control system.</p>
+<p>The final step in the recipe is to use the PkgCreator processor to build the package. The <code>pkg_request</code> dictionary is where you supply the kind of information that munkipkg stores in the build-info.plist, such as the package name, identifier, and version. While you can hardcode these, I let the recipe user supply that information mostly via Input variable.<a href="#foot3" id="ref3"><sup>[3]</sup></a></p>
+<p>The major difference between munkipkg and AutoPkg in this step is that <a href="https://github.com/autopkg/autopkg/blob/126f90f7c6ea9c89c164b9dd575520bf97718e38/Code/autopkgserver/packager.py#L460-L472" target="_blank">AutoPkg’s packaging code</a> uses pkgbuild’s “preserve” ownership option for the files included rather than the “recommended” option that is the default in munkipkg. This means we need to add a number of <code>chown</code> dictionaries to the <code>pkg_request</code> argument. We don’t have to do every single directory, since the <code>chown</code> request will be treated as recursive (subdirectories will inherit the ownership and permissions). I’ve chosen to explicitly mention each executable in my recipe to ensure the correct result (and make the recipe easier to understand) but I could potentially eliminate some of those with more testing.</p>
+<p>The complete recipe is available in my jazzace-recipes repo (<a href="https://github.com/autopkg/jazzace-recipes/blob/master/JazzAce/DisplayCalibrationSupportFiles.pkg.recipe" target="_blank">JazzAce/DisplayCalibrationSupportFiles.pkg.recipe</a>). If I wanted this package to be signed, I could add a <code>.sign</code> child recipe <a href="https://github.com/autopkg/jazzace-recipes/blob/master/JamfProTools/JamfSetComputerName.sign.recipe" target="_blank">similar to one in my repo</a>.</p>
+<h2>GUI-based tools</h2>
+<p>There are two tools of note if you want to use a GUI-based tool to build bespoke packages:</p>
+<ul><li><a href="http://s.sudre.free.fr/Software/Packages/about.html" target="_blank">WhiteBox Packages</a> by Stéphane Sudre (free), and</li>
+<li><a href="https://www.jamf.com/products/jamf-composer/" target="_blank">Composer</a> by Jamf (included with Jamf Pro or US$100/$80 EDU when purchased separately).</li>
+</ul>
+<p>Neither tool has received any significant updates in the past number of years, but they do still work.<a href="#foot4" id="ref4"><sup>[4]</sup></a> They both allow you to build a package from scratch by dragging the files into a List view window. In Packages, you create a project and then add files to the list. A number of common folders are provided to make it more of a drag-and-drop experience. In Composer, since its focus is snapshotting, you need to start a package from scratch by (counterintuitively) cancelling the “Choose a method to create your package” dialogue to arrive at the main window, then dragging one of your files into an open spot in the left sidebar. That will start a new package, which by default uses the filename of the item you dragged in (if you only drag one in) as the package name, and will list that file’s install location as being the same as where it was in the Finder (you can change all of this after the fact). You then drag further files in as needed. Both apps let you specify details about the package itself, like identifier and version, and you can alter permissions and ownership on each item. Packages has a couple of thoughtful touches (like asking whether you want to retain ownership when dragging-and-dropping a file into the list), but both are serviceable. Changing ownership and permissions is something that can be done fairly simply from the GUI, without having to resort to the Terminal (like munkipkg requires to ensure that scripts are executable, for instance).</p>
+<p>The main difference between the two for this kind of recurring package job is that Packages only stores the <em>path</em> of the source file(s) in its project file, whereas Composer has a private cache and copies the files to that cache when added to the package. If you move or delete a source item in a Packages package, it won’t be able to build the package. This also mirrors the difference between my AutoPkg recipe (which stores paths to files in Input variables) and munkipkg (which caches all files in the payload).</p>
+<h2>One Task, Many Solutions</h2>
+<p>In the end, once I understood how munkipkg worked, it was the simplest to get right. The ability to use a pre-existing package as a model was very helpful. AutoPkg’s only advantage in this scenario is that it can more easily assemble the separate Intel and Apple Silicon package versions I need, as well as anything else under source control. Both are easy to update in the future. If I just needed a one-off, both Packages and Composer give me the level of control I need, and I could still come back to them in the future if I needed to make a small update.</p>
+<p>But your use case may not be mine. For easy reference, I’ll conclude with a tabular summary of the key features of each tool. Hopefully, you can find the right packaging tool(s) for your own needs.</p>
+<table>
+	<thead>
+	<tr align=left> <th width="24%">Feature</th>	<th width="18%">munkipkg</th>	<th width="18%">AutoPkg</th>	<th width="18%">Packages</th>	<th width="18%">Composer</th> </tr>
+	</thead>
+	<tbody align=left valign=top>
+	<tr> <th>Primary UI</th> <td>Command Line</td>	<td>Command Line</td>	<td>GUI</td>	<td>GUI</td> </tr>
+	<tr> <th>Template provided</th> <td>Yes (--create option)</td>	<td>No (copy existing recipes)</td>	<td>Yes</td>	<td>No, but defaults supplied</td> </tr>
+	<tr> <th>Defining the payload</th> <td>File System (Finder, Terminal)</td>	<td>Recipe (with file paths)</td>	<td>GUI List</td>	<td>GUI List</td> </tr>
+	<tr> <th>Can import package as model/template</th> <td>Yes</td>	<td>No</td>	<td>No</td>	<td>Yes</td> </tr>
+	<tr> <th>Payload storage</th> <td>Cached</td>	<td>Linked by path</td>	<td>Linked by path</td>	<td>Cached</td> </tr>
+	<tr> <th>Setting Ownership</th> <td>recommended | preserve | preserve-other options (from pkgbuild)</td>	<td>preserve (from pkgbuild), change via chown in PkgCreator</td>	<td>Options when adding, change in GUI</td>	<td>Change in GUI</td> </tr>
+	<tr> <th>Setting Permissions</th> <td>File system (e.g., Terminal)</td>	<td>Recipe (PkgRootCreator and/or PkgCreator)</td>	<td>Change in GUI</td>	<td>Change in GUI</td> </tr>
+	</tbody>
+</table>
+<hr/>
+<p id="foot1">[1] In order for munkipkg to be able to find the installed version of Python 3 you wish it to use, you can change the shebang in the munkipkg code to point to it, change your environment variable to point python3 to that version, or specify which Python to run at the command line each time (e.g., <code>/usr/local/bin/managed_python3 munkipkg […]</code>). <a href="#ref1">[Return to main text]</a></p>
+<p id="foot2">[2] I also rename the executable, since I want it to be named the same regardless of whether it is Intel or Apple Silicon. <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] Normally, we would let AutoPkg fetch the version number from the primary executable it downloaded. In this case, I want to version the compiled package (since the components have their own version numbers), so I make it an Input variable. This way, I can change it in my override or even at runtime (e.g., <code>autopkg run DisplayCalibrationSupportFiles.pkg -k PKG_VERSION="2.0.3"</code>). If you don’t even want that much hassle, I have a <a href="https://github.com/autopkg/jazzace-recipes/blob/master/JazzAce/VersionGenerator.py" target="_blank">VersionGenerator shared processor</a> that provides a (large) version number based on the current Universal time (in seconds), thus ensuring the version number is higher each time you run it. <a href="#ref3">[Return to main text]</a></p>
+<p id="foot4">[4] I had to open Packages from a contextual menu when freshly installed on a Mac running Sonoma to override the error message saying it was damaged. All subsequent launches were without error. <a href="#ref4">[Return to main text]</a></p>
