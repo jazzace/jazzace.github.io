@@ -38,37 +38,37 @@ title: Packaging Choices — munkipkg, AutoPkg, and GUI-based Tools (📦)
 <p>AutoPkg is rightly lauded for its ability to automate the download of the latest version of literally thousands of software titles. But one feature that is often underrated is its ability to build packages programmatically. In this case, only one of the items in the package I want to build would be something I might download in the traditional way AutoPkg would. While this is still not required in order to access the packaging functionality, I decided that I would leverage that download ability in order to access the <a href="https://github.com/timsutton/customdisplayprofiles/releases/tag/v1.0.1" target="_blank">“self-contained” versions of Tim Sutton’s customdisplayprofiles</a> in either Intel or Apple Silicon versions. (You can see this <a href="https://github.com/autopkg/jazzace-recipes/blob/master/Tim%20Sutton/customdisplayprofiles.download.recipe" target="_blank">download recipe in my jazzace-recipes repo</a>. An Input variable lets you select which architecture you want via override.)</p>
 <p>Building the directory structure above is done with the PkgRootCreator processor. Since you need to create the intermediary directories as well, the Processor gets a lot of Arguments:</p>
 <pre>&lt;dict&gt;
-		&lt;key&gt;Processor&lt;/key&gt;
-		&lt;string&gt;PkgRootCreator&lt;/string&gt;
-		&lt;key&gt;Arguments&lt;/key&gt;
-		&lt;dict&gt;
-				&lt;key&gt;pkgdirs&lt;/key&gt;
-				&lt;dict&gt;
-						&lt;key&gt;Applications&lt;/key&gt;
-						&lt;string&gt;0775&lt;/string&gt;
-						&lt;key&gt;Applications/Utilities&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-						&lt;key&gt;usr&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-						&lt;key&gt;usr/local&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-						&lt;key&gt;usr/local/bin&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-						&lt;key&gt;usr/local/outset&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-						&lt;key&gt;usr/local/outset/login-every&lt;/key&gt;
-						&lt;string&gt;0755&lt;/string&gt;
-				&lt;/dict&gt;
-				&lt;key&gt;pkgroot&lt;/key&gt;
-				&lt;string&gt;%RECIPE_CACHE_DIR%/payload&lt;/string&gt;
-		&lt;/dict&gt;
+        &lt;key&gt;Processor&lt;/key&gt;
+        &lt;string&gt;PkgRootCreator&lt;/string&gt;
+        &lt;key&gt;Arguments&lt;/key&gt;
+        &lt;dict&gt;
+                &lt;key&gt;pkgdirs&lt;/key&gt;
+                &lt;dict&gt;
+                        &lt;key&gt;Applications&lt;/key&gt;
+                        &lt;string&gt;0775&lt;/string&gt;
+                        &lt;key&gt;Applications/Utilities&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                        &lt;key&gt;usr&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                        &lt;key&gt;usr/local&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                        &lt;key&gt;usr/local/bin&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                        &lt;key&gt;usr/local/outset&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                        &lt;key&gt;usr/local/outset/login-every&lt;/key&gt;
+                        &lt;string&gt;0755&lt;/string&gt;
+                &lt;/dict&gt;
+                &lt;key&gt;pkgroot&lt;/key&gt;
+                &lt;string&gt;%RECIPE_CACHE_DIR%/payload&lt;/string&gt;
+        &lt;/dict&gt;
 &lt;/dict&gt;
 </pre>
 <p>Next, the recipe needs to copy the five items into their place in the newly-created package payload structure. With customdisplayprofiles, I know the location of the downloaded item from the parent recipe, so I can move it in to place directly.<a href="#foot2" id="ref2"><sup>[2]</sup></a> With all the others, I need an Input variable whose value is the path to the file I want copied. For example,</p>
 <pre>&lt;key&gt;Input&lt;/key&gt;
 &lt;dict&gt;
-	&lt;key&gt;BRIGHTNESS_PATH&lt;/key&gt;
-	&lt;string&gt;/Volumes/AutoPkgLibrary/AutoPkg/Files/brightness&lt;/string&gt;&lt;
+    &lt;key&gt;BRIGHTNESS_PATH&lt;/key&gt;
+    &lt;string&gt;/Volumes/AutoPkgLibrary/AutoPkg/Files/brightness&lt;/string&gt;&lt;
 [...]
 </pre>
 <p>I then use variable substitution (e.g., <code>%BRIGHTNESS_PATH%</code>) to tell the Copier processor where to find the item. While a bit tedious, this allows me to store the items being packaged anywhere on my system. I don’t have to compile them in a particular location — AutoPkg does that for me. This could be quite advantageous if you are managing any of these items using Git or some other version control system.</p>
@@ -87,16 +87,64 @@ title: Packaging Choices — munkipkg, AutoPkg, and GUI-based Tools (📦)
 <p>But your use case may not be mine. For easy reference, I’ll conclude with a tabular summary of the key features of each tool. Hopefully, you can find the right packaging tool(s) for your own needs.</p>
 <table>
 	<thead>
-	<tr align=left> <th width="24%">Feature</th>	<th width="18%">munkipkg</th>	<th width="18%">AutoPkg</th>	<th width="18%">Packages</th>	<th width="18%">Composer</th> </tr>
+		<tr align=left>
+			<th width="24%">Feature</th>
+			<th width="20%">munkipkg</th>
+			<th width="20%">AutoPkg</th>
+			<th width="18%">Packages</th>
+			<th width="18%">Composer</th>
+		</tr>
 	</thead>
 	<tbody align=left valign=top>
-	<tr> <th>Primary UI</th> <td>Command Line</td>	<td>Command Line</td>	<td>GUI</td>	<td>GUI</td> </tr>
-	<tr> <th>Template provided</th> <td>Yes (--create option)</td>	<td>No (copy existing recipes)</td>	<td>Yes</td>	<td>No, but defaults supplied</td> </tr>
-	<tr> <th>Defining the payload</th> <td>File System (Finder, Terminal)</td>	<td>Recipe (with file paths)</td>	<td>GUI List</td>	<td>GUI List</td> </tr>
-	<tr> <th>Can import package as model/template</th> <td>Yes</td>	<td>No</td>	<td>No</td>	<td>Yes</td> </tr>
-	<tr> <th>Payload storage</th> <td>Cached</td>	<td>Linked by path</td>	<td>Linked by path</td>	<td>Cached</td> </tr>
-	<tr> <th>Setting Ownership</th> <td>recommended | preserve | preserve-other options (from pkgbuild)</td>	<td>preserve (from pkgbuild), change via chown in PkgCreator</td>	<td>Options when adding, change in GUI</td>	<td>Change in GUI</td> </tr>
-	<tr> <th>Setting Permissions</th> <td>File system (e.g., Terminal)</td>	<td>Recipe (PkgRootCreator and/or PkgCreator)</td>	<td>Change in GUI</td>	<td>Change in GUI</td> </tr>
+		<tr>
+			<th>Primary UI</th>
+			<td>Command Line</td>
+			<td>Command Line</td>
+			<td>GUI</td>
+			<td>GUI</td>
+		</tr>
+		<tr>
+			<th>Template provided</th>
+			<td>Yes (--create option)</td>
+			<td>No (copy existing recipes)</td>
+			<td>Yes</td>
+			<td>No, but defaults supplied</td>
+		</tr>
+		<tr>
+			<th>Defining the payload</th>
+			<td>File System (Finder, Terminal)</td>
+			<td>Recipe (with file paths)</td>
+			<td>GUI List</td>
+			<td>GUI List</td>
+		</tr>
+		<tr>
+			<th>Can import package as model/template</th>
+			<td>Yes</td>
+			<td>No</td>
+			<td>No</td>
+			<td>Yes</td>
+		</tr>
+		<tr>
+			<th>Payload storage</th>
+			<td>Cached</td>
+			<td>Linked by path</td>
+			<td>Linked by path</td>
+			<td>Cached</td>
+		</tr>
+		<tr>
+			<th>Setting Ownership</th>
+			<td>recommended | preserve | preserve-other options (from pkgbuild)</td>
+			<td>preserve (from pkgbuild), change via chown in PkgCreator</td>
+			<td>Options when adding, change in GUI</td>
+			<td>Change in GUI</td>
+		</tr>
+		<tr>
+			<th>Setting Permissions</th>
+			<td>File system (e.g., Terminal)</td>
+			<td>Recipe (PkgRootCreator and/or PkgCreator)</td>
+			<td>Change in GUI</td>
+			<td>Change in GUI</td>
+		</tr>
 	</tbody>
 </table>
 <hr/>
