@@ -1,0 +1,33 @@
+---
+layout: post
+title: 📦 Next Level AutoPkg Workshop at X World
+---
+<p>It’s been over two weeks since I had the pleasure of co-presenting with James “Sorry James” Smith a half-day workshop on AutoPkg at X World in Melbourne, Australia. I have finally recovered enough from the trip (and a cold!) to gather up the slides and post them here. While this workshop did leverage some of the content Elliot Jordan and I developed for the <a href="/2023/07/27/autopkg-in-depth-workshop.html" target="_blank">workshop we gave at the Mac Admins Conference in 2023</a>, there was a lot of new content surrounding recipe reading and writing pkg recipes.</p>
+<p><a href="/images/202405_xworld_workshop@3x.jpg" target="_blank"><img style="clear: both;" src="/images/202405_xworld_workshop.jpg" srcset="/images/202405_xworld_workshop@2x.jpg 2x" alt="James and Anthony presenting in front of two large displays" /></a><br /><cite>Photo: Jon Rhoades</cite></p>
+<p>Since the bulk of the workshop involved asking participants to try to read recipes without running them, you can do the same exercise by going through the slides here. I have provided the “key” below (no peeking!) so that you can better understand why each recipe was chosen for examination and what each recipe does.</p>
+<ul><li><a href="/downloads/XWorldNextLevelAutoPkg.pdf" target="_blank">Next Level AutoPkg slides</a> (3 MB PDF)</li></ul>
+<hr />
+<h3>Recipe Reading Key</h3>
+<ol>
+<li>smithjw-recipes: Docker.download (YAML, one signature type, path inside dmg)
+<ul><li>Sidebar: Versioning — might happen in download recipe explicitly, implicitly, or not at all</li></ul>
+</li>
+<li>jazzace-recipes: MacadminsPython.download (plist, GitHub, other signature type, when full pkg downloaded)</li>
+<li>(no repo): YAML override of above recipe (command to build w/YAML shown)</li>
+<li>recipes: MSTeams2.download (Recipe that changes default input variables)</li>
+<li>smithjw-recipes: Webstorm.pkg (uses AppPkgCreator)
+<ul><li>Sidebar: Processor arguments and processor-info verb</li>
+<li>Sidebar: Variables — 4 ways to set, can be used once in the environment (this simple child recipe uses all 4)</li></ul>
+</li>
+<li>jazzace-recipes: FinalCutProContent.pkg (extracts existing pkg from dmg and renames)</li>
+<li>smithjw-recipes: Zoom_IT.pkg (unpacking for version info, cleanup, shared processors)
+<ul><li>Sidebar: Custom and Shared Processors (see also Noteworthy Processors in the wiki)</li></ul>
+</li>
+<li>Take-Home Exercise: smithjw-recipes Zoom_IT.pkg vs. jazzace-recipes Zoom-forIT.pkg (Short Answer: Patch)</li>
+<li>smithjw-recipes: FrendlyPathDeleter.recipe.yaml (stub for previous recipe; Anthony’s is Processors.stub.recipe)</li>
+<li><strong>Advanced Example:</strong>
+<ul><li>smithjw-recipes: GitHub_Desktop-Universal.download (multiple downloads)</li>
+<li>smithjw-recipes: GitHub_Desktop-Universal.pkg (making a Universal installer out of platform-specific ones, FileCreator for post-install script)</li></ul></li>
+<li>Take-Home Exercises: jazzace-recipes AbletonLiveSassafras.pkg (automate manual vendor instructions), rtouton-recipes any MSOffice recipe (Input variable default change, deconstructing to version)</li>
+</ol>
+
