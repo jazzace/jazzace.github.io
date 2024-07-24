@@ -2,7 +2,7 @@
 layout: post
 title: 📦 When AppPkgCreator Isn’t Enough
 ---
-<p>Recently, I was asked to deploy an app that is supplied as a drag-and-drop app in a disk image (.dmg). Luckily for me, someone had already written download and pkg recipes for it, so I just had to add a child recipe to upload to my management system.</p>
+<p>Recently, I was asked to deploy an app that is supplied as a drag-and-drop app in a disk image (.dmg). Luckily for me, someone had already written download and pkg AutoPkg recipes for it, so I just had to add a child recipe to upload to my management system.</p>
 <h3>Except…</h3>
 <p>The open source developer of this app provides separate downloads for Intel and Apple Silicon CPUs (I still have to support both architectures). There are two ways to workaround the lack of a Universal macOS installer:</p>
 <ul><li><strong>Create one yourself</strong>: you can use AutoPkg to gather up (or create) the architecture-dependent installers for both and use a postinstall script to check the architecture and then install the correct one (see examples from <a href="https://github.com/autopkg/rtrouton-recipes/tree/master/AdobeCreativeCloud" target="_blank">Rich Trouton</a> and <a href="https://github.com/autopkg/smithjw-recipes/tree/master/Docker" target="_blank">James Smith</a>); or</li>
