@@ -1,0 +1,96 @@
+---
+layout: post
+title: 📦 Advanced URLTextSearcher
+---
+<p>A couple of <a href="https://macadmins.slack.com/archives/C056155B4/p1723838817414549?thread_ts=1723828273.181049&cid=C056155B4" target="_blank">recent</a> <a href="https://macadmins.slack.com/archives/C056155B4/p1723849318561909?thread_ts=1723848919.725679&cid=C056155B4" target="_blank">discussions</a> in the #autopkg channel of the Mac Admins Slack included knowledge about URLTextSearcher that veteran AutoPkg recipe authors generally know but are not front-and-centre in the documentation. Since there is no good place to put them in the Wiki, I thought I would describe these more advanced tips here. I‘ll start with a “cheat sheet” and then describe them in detail. Just a heads up that some of the code excerpts have long lines, so you may need to scroll the code blocks sideways to view everything.</p>
+<h3>URLTextSearcher Cheat Sheet</h3>
+<pre>
+result_output_var_name:
+    defaults to "match", but can be used to assign a variable name used by another processor(s)
+re_pattern:
+    Regular expression (Python) to match against page;
+    (…) limits what is assigned to the output variable;
+    (?P&lt;name&gt;…) assigns the found sub-pattern to a variable named "name"
+        [Plist recipes: (?P&amp;lt;name&amp;gt;…)]
+url:
+    URL to download OR path to file (using file:///…)
+</pre>
+<h3>result_output_var_name</h3>
+<p>I’ll start with a tip that is about how you can better leverage a documented feature. The superpower of the URLTextSearcher processor (and my derivative of it for use on a single text string, <a href="https://github.com/autopkg/jazzace-recipes/blob/master/JazzAce/TextSearcher.py" target="_blank">TextSearcher</a>) is the ability to use a regular expression to find the text you need. This is commonly used to extract a download URL from a web page, but you can actually extract any text that a regular expression can find for you. My favourite feature of this processor is that you can specify the name of the variable you want AutoPkg to assign to the result of the regular expression search using the <code>result_output_var_name</code> argument. For example, if you set <code>result_output_var_name</code> to a value of <code>url</code> and the next processor is URLDownloader, you do not have to specify the <code>url</code> argument, since it already has a value for <code>url</code> (assuming, of course, that you grabbed a full URL with your search pattern).</p>
+<h3>Selecting Sub-patterns</h3>
+<p>The URLTextSearcher processor only finds the first match for the regular expression, which is often very useful (e.g., a web page listing all the releases of the app starting with the most recent) but can also be challenging (e.g., when the first download link on the page is not the URL you are looking for). For those times when you need to provide context within your regular expression in order to grab the correct string, parentheses (i.e., the things surrounding this text) can tell AutoPkg, “I only want you to return this part.” Here is <a href="https://github.com/autopkg/jazzace-recipes/blob/d82fc5a39a31f4842886f33dc1e5afe9c0c21c11/AUTOMATIC1111/StableDiffusionWebUI.download.recipe#L19-L30" target="_blank">an example from my repo</a> of this technique:</p>
+<pre>
+&lt;key&gt;Processor&lt;/key&gt;
+&lt;string&gt;URLTextSearcher&lt;/string&gt;
+&lt;key&gt;Arguments&lt;/key&gt;
+&lt;dict&gt;
+	&lt;key&gt;re_pattern&lt;/key&gt;
+	&lt;string&gt;/AUTOMATIC1111/stable-diffusion-webui/releases/tag/v([\d.]+)"&lt;/string&gt;
+	&lt;key&gt;result_output_var_name&lt;/key&gt;
+	&lt;string&gt;version&lt;/string&gt;
+	&lt;key&gt;url&lt;/key&gt;
+	&lt;string&gt;https://github.com/AUTOMATIC1111/stable-diffusion-webui/releases&lt;/string&gt;
+&lt;/dict&gt;
+</pre>
+<p>In this case, I am trying to grab the version number of the latest release from the GitHub Releases page for this project.<a href="#foot1" id="ref1"><sup>[1]</sup></a> But if I just search for the first thing that looks like a version number (e.g., <code>[\d.]+</code>, which will locate the first combination of digits and dots it sees), I am unlikely to find what I need. So I look at the HTML in the area of the page where the version number is specified and I include enough of the surrounding HTML in my search pattern to make certain that the desired version is contained within.<a href="#foot2" id="ref2"><sup>[2]</sup></a> I then add parentheses around the part of the expression that captures the version number to signal that I want to capture only that sub-pattern: <code>([\d.]+)</code></p>
+<p>URLTextSearcher recognizes that I only want the sub-pattern and returns that value. In addition, by setting the <code>result_output_var_name</code> argument to <code>version</code>, any subsequent processor that accepts an argument for <code>version</code> will use that value.</p>
+<h3>Named Sub-patterns</h3>
+<p>Sometimes, however, there are times when you want to capture more than one value at the same time when using URLTextSearcher. People used to working with regular expressions that use one or more sets of parentheses to identify sub-patterns might be tempted to reference them using <code>\1</code>, <code>\2</code>, etc., but that doesn’t work in this context. What <em>does</em> work is giving each pattern a name. The earliest recipe writers (whose recipes I copied to learn about this technique) knew that they could <a href="https://docs.python.org/3/library/re.html#index-18" target="_blank">name a sub-pattern</a> because it was supported in Python. The result of a named sub-pattern becomes a variable available to AutoPkg. As you can imagine, this can be very powerful.</p>
+<p>The syntax is to add <code>?P&lt;name&gt;</code> just inside the left parenthesis, where <cite>name</cite> is replaced by a meaningful variable name.<a href="#foot3" id="ref3"><sup>[3]</sup></a> Here is an example of capturing a single sub-pattern using this technique from <a href="https://github.com/autopkg/jazzace-recipes/blob/d82fc5a39a31f4842886f33dc1e5afe9c0c21c11/AppleSupport/AppleSupportArticleDateTitle.download.recipe#L68-L76" target="_blank">a recipe that downloads an Apple Support Article</a>:</p>
+<pre>
+&lt;key&gt;Processor&lt;/key&gt;
+&lt;string&gt;URLTextSearcher&lt;/string&gt;
+&lt;key&gt;Arguments&lt;/key&gt;
+&lt;dict&gt;
+	&lt;key&gt;re_pattern&lt;/key&gt;
+	&lt;string&gt;meta property="og:title" content="(?P&amp;lt;arttitle&amp;gt;.*)"&lt;/string&gt;
+	&lt;key&gt;url&lt;/key&gt;
+	&lt;string&gt;file://%RECIPE_CACHE_DIR%/downloads/%ARTICLE%&lt;/string&gt;
+&lt;/dict&gt;
+</pre>
+<p>Note that I had to change the angle brackets (&lt; &gt;) to their XML entities (<code>&amp;lt; &amp;gt;</code>) because the recipe is in plist form. It is a little easier to read in YAML:</p>
+<pre>
+- Processor: URLTextSearcher
+  Arguments:
+    re_pattern: meta property="og:title" content="(?P&lt;arttitle&gt;.*)"
+    url: file://%RECIPE_CACHE_DIR%/downloads/%ARTICLE%
+</pre>
+<p>In this case, my regular expression looks in the header of the HTML page and grabs the “content” from between the double-quotes and uses that as the value of the variable <code>arttitle</code>. Of course, from what we learned in the previous part of this article, I could have also obtained the same result by not using the <code>?P</code> syntax and instead just using parentheses and assigning <code>result_output_var_name</code> a value of <code>arttitle</code>:
+<pre>
+  Arguments:
+    re_pattern: meta property="og:title" content="(.*)"
+    url: file://%RECIPE_CACHE_DIR%/downloads/%ARTICLE%
+    result_output_var_name: arttitle
+</pre>
+<p>Because I haven’t always had the understanding of sub-patterns that I do now, you will see both forms in my recipes when I need to use a sub-pattern. Nevertheless, each form correctly assigns the desired value to <code>arttitle</code>.</p>
+<h3>Capturing More Than One Sub-pattern</h3>
+<p>This technique of named sub-patterns is how you are able to capture more than one value at a time. <a href="https://github.com/autopkg/jazzace-recipes/blob/d82fc5a39a31f4842886f33dc1e5afe9c0c21c11/AppleSupport/AppleSupportArticleDateTitle.download.recipe#L57-L65" target="_blank">In the the same recipe I just cited</a>, there is an example of gathering multiple sub-patterns from a single processor call. I will show it here converted to YAML:<a href="#foot4" id="ref4"><sup>[4]</sup></a></p>
+<pre>
+- Processor: URLTextSearcher
+  Arguments:
+    re_pattern: 'publish_date: "(?P&lt;MM&gt;\d\d)(?P&lt;DD&gt;\d\d)(?P&lt;YYYY&gt;\d{4})"'
+    url: file://%RECIPE_CACHE_DIR%/downloads/%ARTICLE%
+</pre>
+<p>In this case, the web page stores the date in MMDDYYYY format. For my purposes, I want the date in ISO 8601 format, specifically YYYY-MM-DD. So I use named sub-patterns to grab the 2-digit month (which I name MM), 2-digit day of the month (DD), and the 4-digit year (YYYY). When I run this recipe on a page with a publication date of 08192024 (i.e., 2024 August 19), URLTextSearcher returns:<a href="#foot5" id="ref5"><sup>[5]</sup></a></p>
+<pre>{'Output': {'DD': '19', 'MM': '08', 'YYYY': '2024', 'match': '2024'}}
+</pre>
+<p>I then was able to use these new values in the filename of what I wanted for output:</p>
+<pre>
+- Processor: Copier
+  Arguments:
+    destination_path: '%SAVE_LOCATION%/%YYYY%-%MM%-%DD% %ARTICLE% %arttitle%.html'
+    overwrite: true
+    source_path: '%pathname%'
+</pre>
+<p>In this case, <code>%ARTICLE%</code> is an input variable specifying the number of the Apple Support Article we downloaded. All the rest of the variables being substituted were obtained from the regular expressions as arguments to URLTextSearcher, as shown above.</p>
+<h3>It Doesn’t Have To Be a Web Page</h3>
+<p>The observant reader will notice that the <code>url</code> argument for a number of the cited examples starts with <code>file://</code> rather than <code>https://</code>. URLTextSearcher can work on a local file (that it has permission to read) just as well as a web page it downloads from the Internet if you use the <code>file:///</code> syntax.<a href="#foot6" id="ref6"><sup>[6]</sup></a> This can be used to search a web page multiple times or extract data from a file that one of the other core processors can’t handle. Both recipes I cite in this article are real oddballs in that they do not deal with installers or apps — <a href="https://github.com/autopkg/jazzace-recipes/blob/master/AUTOMATIC1111/StableDiffusionWebUI.download.recipe" target="_blank">StableDiffusionWebUI.download</a> downloads Python and Javascript code and <a href="https://github.com/autopkg/jazzace-recipes/blob/master/AppleSupport/AppleSupportArticleDateTitle.download.recipe" target="_blank">AppleSupportArticleDateTitle.download</a> literally downloads a web page (to track how often it changes and to cache copies as they are posted). Yet this makes them perfect for these techniques.</p>
+<h3>Yours To Explore</h3>
+<p>Hopefully, knowledge of these techniques will help you understand more of the recipes posted publicly and perhaps find a solution to a recipe-writing problem you are having.</p>
+<hr />
+<p id="foot1">[1] I can’t use the GitHubReleasesInfoProvider processor in this instance because the payload I need is a bunch of Python, Javascript, and various text files in a zip archive, not a pkg or dmg or executable. <a href="#ref1">[Return to main text]</a></p>
+<p id="foot2">[2] The <code>"</code> at the end is the really important bit in this case, since I am grabbing the end of a link that is surrounded in double-quotes. This allows me to use a simpler, more flexible expression for the version number, capturing any common form, from 1.0 to 1.2.3.456.  <a href="#ref2">[Return to main text]</a></p>
+<p id="foot3">[3] You will need to limit yourself to characters in the ASCII range—no diacritical marks for you! <a href="#ref3">[Return to main text]</a></p>
+<p id="foot4">[4] Because the sequence colon-space (<code>: </code>) has a special meaning in YAML, I would probably convert <code>publish_date: </code> to <code>publish_date:\s</code> for safety if I were to share this recipe in YAML format, but AutoPkg correctly evaluates the expression shown. <a href="#ref4">[Return to main text]</a></p>
+<p id="foot5">[5] Because I did not set a value for <code>result_output_var_name</code>, it uses the default value of <code>match</code> for the variable name, hence the additional variable being returned, matching the last sub-pattern to be completed in the expression. In testing, I also noticed that if you want to return the entire search pattern results plus a sub-pattern, you can place parenthesis around the entire expression and that is what will be returned to <code>match</code> or whatever variable name you choose with the <code>result_output_var_name</code> argument. <a href="#ref5">[Return to main text]</a></p>
+<p id="foot6">[6] The third slash in <code>file:///</code> is for the <code>/</code> directory, so in the code shown in this article, <code>%RECIPE_CACHE_DIR%</code> includes the / at the beginning of the expanded path, so we don’t need to add it. <a href="#ref6">[Return to main text]</a></p>
