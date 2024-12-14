@@ -1,0 +1,21 @@
+---
+layout: post
+title: Copy as Pathname in Sequoia
+---
+<p>When you are shell scripting or working in Terminal, sometimes you want a quicker way to enter the path to a file or folder, particularly if you have already navigated to it in the Finder. One way that works in Terminal is to drag the file or folder from the Finder onto the Terminal window, which then types the path into the current command. However, another method was introduced in El Capitan (OS X 10.11) that allows you to copy the full path onto the clipboard. You do this by selecting the item in the Finder and then doing one of the following:</p>
+<ul><li>Summon the contextual menu (e.g., Control-click the file, Right-click the file), hold the Option key, then select: Copy “<cite>filename</cite>” as Pathname;</li>
+<li>Hold the Option key and, in the Finder menus, select: Edit > Copy “<cite>filename</cite>” as Pathname;</li>
+<li>Press Command-Option-C.</li></ul>
+<p>In macOS Sequoia, there is a change that will be quite useful for most Mac Admins.</p>
+<p>Previously, the path that was copied to the clipboard was a human-readable version of the path. If the path had spaces in it, you would have to quote the path or escape the spaces (i.e., precede each space with a <code>\</code>) to use it in a shell script or command. If you were in a Terminal session, it would often be easier to drag the item onto the Terminal window, as this would automatically escape all the necessary characters so that the current command would properly interpret it as a path.</p>
+<p>Starting in macOS Sequoia, copying the path to the clipboard generates a path that can be directly pasted into the Terminal or a script and be interpreted as that path without further manipulation. Here are the main cases:</p>
+<dl>
+	<dt>No spaces or single quote characters in the path</dt>
+		<dd>Path is provided as is<br/>e.g., <code>/Users/Shared/NoSpaces.jpeg</code></dd>
+	<dt>At least one space exists in the path, no single quote</dt>
+		<dd>Path is single quoted<br/>e.g., <code>'/Library/Application Support'</code></dd>
+	<dt>A single quote appears somewhere in the path</dt>
+		<dd>Path is escaped<br/>e.g., <code>/Users/steve/Desktop/Steve\'s\ Great\ Picture.png</code></dd>
+</dl>
+<p>Note that this behaviour is somewhat different than dragging and dropping an item onto a Terminal window, as that method will always generate an escaped path; it does not attempt to quote the path.</p>
+<p>There are certainly some people who are <a href="https://discussions.apple.com/thread/255762727?sortBy=rank" target="_blank">unhappy with this change in behaviour</a> but most Mac Admins will not be among them. (One could always file Feedback to make Command-Option-Shift-C provide the previous behaviour if you want the old behaviour to be available.) Nevertheless, this is one of the new features in Sequoia that completely escaped me until I stumbled across it this week. I thought it was worth documenting.</p>
