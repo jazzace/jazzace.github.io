@@ -37,7 +37,7 @@ GEM
       syntax (>= 1.0.0)
     mathn (0.1.0)
     mini_portile2 (2.8.8)
-    nokogiri (1.18.3)
+    nokogiri (1.18.4)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     posix-spawn (0.3.15)
