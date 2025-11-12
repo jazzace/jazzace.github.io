@@ -1,12 +1,31 @@
 ---
 layout: default
-title: Sharing What I’ve Learned
+title: Sharing What I’ve Learned and Where I’m At
 ---
-<h1>Anthony Reimer’s Blog for Mac Admins</h1>
-<p>This is my blog for Mac Admins, focusing on things that may be of interest to those who run Mac computer Labs like I do.</p>
-<p>As of 2020, I have migrated all my presentation resources and blog-like posts that had appeared on the University of Calgary IAML web site to this personal site. The resource page is <a href="/resources/index.html">maclabs.jazzace.ca/resources/</a> and my blog-like posts have been posted here as if this blog existed when I wrote those posts. My <a href="/resources/hwswchart">Mac Hardware/Software Obsolescence Chart</a> has also been relocated here (you can always go to <a href="http://obsolescence.jazzace.ca">obsolescence.jazzace.ca</a> and be redirected to the right page).</p>
-<p>For all my other personally-created content, go to my <a href="https://jazzace.ca/">personal web site</a> (Established 1996), also linked at the top of each page.</p>
-<h2>Posts So Far:</h2>
+<h1>Anthony Reimer’s Blog</h1>
+<p> this website contains:</p>
+<h2>Blog Posts</h2>
+<p>Links for all articles posted appear at the bottom of all blog pages (and on this page)</p>
+<ul>
+<li>Articles related to my work with University Mac computer labs serving the visual and performing arts;</li>
+<li>Articles related to the Mac Admins community in general;</li>
+<li>Blog-like articles previously posted on the IAML website (dated by when they were originally posted there);</li>
+<li>Personal stories and updates as of 2025.</li>
+</ul>
+
+<h2>Presentations and Other Resources</h2>
+<p><a href="/resources/index.html">maclabs.jazzace.ca/resources/</a>. List entries sorted in reverse chronological order:</p>
+<ul>
+<li>Presentations (mostly at Mac Admin conferences);</li>
+<li>Articles posted to external web sites (notably AFP548);</li>
+<li>Podcast appearances (notably the Mac Admins Podcast).</li>
+<li>Long-term projects not set to a particular time, normally stored on GitHub (previously called “Ongoing”).</li>
+</ul>
+<h2>Mac Hardware/Software Obsolescence Chart</h2>
+<p>This chart stopped being maintained shortly after the release of macOS 26. You may <a href="/resources/hwswchart">view the final release</a> or, if you prefer, <a href="https://github.com/jazzace/MacObsolescence" target="_blank">download or fork the source from GitHub</a> (with all my internal documentation) and update it yourself, as it has been dedicated to the Public Domain as much as possible.</p>
+<h2>Other Personal</h2>
+<p>For other personally-created content, go to my <a href="https://jazzace.ca/">personal web site</a> (Established 1996), also linked at the top of each page.</p>
+<h2>Posts:</h2>
 {% assign postsByYear =
 	site.posts | group_by_exp:"post", "post.date | date: '%Y'" %}
 {% for year in postsByYear %}
